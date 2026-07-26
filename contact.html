@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contact GOFA SHIPPING — Get a Quote</title>
+  <title>Contact GOFA SHIPPING - Get a Quote</title>
   <meta name="description" content="Reach GOFA SHIPPING for quotes, tracking, and membership upgrades. Call (242) 427-5699 or email info@gofashipping.com. Nassau, The Bahamas." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -50,13 +50,13 @@
             <a href="index.html#services">Family Island Delivery</a>
           </div>
         </div>
-        <a href="index.html#track">Track Package</a>
+        <a href="tracking.html">Track Package</a>
         <a href="contact.html" class="active">Contact Us</a>
       </nav>
 
       <div class="nav-auth">
-        <a href="contact.html" class="btn btn-ghost">👤 Login</a>
-        <a href="contact.html" class="btn btn-gold">👤 Sign Up</a>
+        <a href="account.html" class="btn btn-ghost"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login</a>
+        <a href="account.html" class="btn btn-gold"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Sign Up</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
     </div>
@@ -78,7 +78,7 @@
 
         <div class="info-card">
           <h3>Contact details</h3>
-          <p>Reach us directly — we usually reply within one business day.</p>
+          <p>Reach us directly - we usually reply within one business day.</p>
 
           <div class="info-item">
             <div class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z"/></svg></div>
@@ -106,7 +106,7 @@
           <h3>Send us a message</h3>
           <p>Tell us what you're shipping and we'll get you a quote.</p>
 
-          <div class="form-success" id="formSuccess">✓ Thanks! Your message is ready to send — we'll be in touch shortly.</div>
+          <div class="form-success" id="formSuccess">✓ Thanks! Your message is ready to send - we'll be in touch shortly.</div>
 
           <form id="contactForm" novalidate>
             <div class="field-row">
@@ -184,6 +184,9 @@
     </div>
   </footer>
 
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="chatbot.js"></script>
   <script>
     const toggle = document.getElementById('navToggle');
     const links = document.getElementById('navLinks');
@@ -191,15 +194,66 @@
 
     const form = document.getElementById('contactForm');
     const success = document.getElementById('formSuccess');
-    form.addEventListener('submit', (e) => {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const CFG = window.GOFA_CONFIG || {};
+
+    function showSuccess(text) {
+      success.textContent = text || "✓ Thanks! Your quote request was sent - we'll be in touch shortly.";
+      success.className = 'form-success show';
+    }
+    function showError(text) {
+      success.textContent = text || "❌ Sorry, something went wrong. Please call (242) 427-5699 or try again.";
+      success.className = 'form-success show error';
+    }
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }
-      const name = document.getElementById('name').value;
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
       const plan = document.getElementById('plan').value || 'General inquiry';
-      const msg = document.getElementById('message').value;
-      const body = `Name: ${name}%0D%0AInterested in: ${plan}%0D%0A%0D%0A${msg}`;
-      success.classList.add('show');
-      window.location.href = `mailto:info@gofashipping.com?subject=Shipping inquiry from ${name}&body=${body}`;
+      const msg = document.getElementById('message').value.trim();
+
+      // If Web3Forms is configured, send directly (no email app needed).
+      if (CFG.web3formsAccessKey) {
+        submitBtn.disabled = true;
+        const original = submitBtn.textContent;
+        submitBtn.textContent = 'Sending…';
+        try {
+          const res = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              access_key: CFG.web3formsAccessKey,
+              subject: `Shipping inquiry from ${name}`,
+              from_name: 'GOFA Shipping Website',
+              name, email, phone,
+              interested_in: plan,
+              message: msg
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.success) {
+            form.reset();
+            showSuccess();
+          } else {
+            showError(data.message ? '❌ ' + data.message : undefined);
+          }
+        } catch (_) {
+          showError("❌ Couldn't reach the server. Check your connection or call (242) 427-5699.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = original;
+        }
+        return;
+      }
+
+      // Fallback: no service configured yet -> open the visitor's email app.
+      const body = `Name: ${name}%0D%0AEmail: ${email}%0D%0APhone: ${phone}%0D%0AInterested in: ${plan}%0D%0A%0D%0A${msg}`;
+      showSuccess("✓ Opening your email app to send…");
+      window.location.href = `mailto:gofabahamas@gmail.com?subject=Shipping inquiry from ${name}&body=${body}`;
     });
   </script>
 </body>

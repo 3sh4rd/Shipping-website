@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account - GOFA SHIPPING</title>
+  <meta name="description" content="Create your GOFA Shipping account or log in to track packages, get quotes, and manage your membership." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Top info bar -->
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="tagline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="color:var(--gold-400)"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        Your Gateway From the U.S. to <b>Any Island</b>
+      </div>
+      <div class="tb-right">
+        <a class="tb-item" href="tel:+12424275699"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z"/></svg>(242) 427-5699</a>
+        <a class="tb-item" href="mailto:info@gofashipping.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7L22 6"/></svg>info@gofashipping.com</a>
+        <span class="tb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Nassau, The Bahamas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav">
+      <a href="index.html" class="logo">
+        <span class="logo-main">GOFA</span>
+        <span class="logo-sub">SHIPPING</span>
+        <svg class="swoosh" viewBox="0 0 78 8"><path d="M2 6 C24 1 54 1 76 3" fill="none" stroke="#f5b421" stroke-width="4" stroke-linecap="round"/></svg>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="index.html#how">How It Works</a>
+        <a href="index.html#rates">Rates</a>
+        <a href="index.html#membership">Memberships</a>
+        <div class="nav-item">
+          <a>Services <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></a>
+          <div class="dropdown">
+            <a href="index.html#services">Ocean Freight</a>
+            <a href="index.html#services">Package Consolidation</a>
+            <a href="index.html#services">Customs Clearance</a>
+            <a href="index.html#services">Family Island Delivery</a>
+          </div>
+        </div>
+        <a href="tracking.html">Track Package</a>
+        <a href="contact.html">Contact Us</a>
+      </nav>
+      <div class="nav-auth">
+        <a href="account.html" class="btn btn-ghost active-btn"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Account</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <!-- Account hero -->
+  <section class="account-hero">
+    <div class="container">
+      <h1>Your GOFA <span class="script">Account</span></h1>
+      <p>Sign in to track packages, get faster quotes, and manage your membership.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+
+      <!-- Auth card (shown when logged out) -->
+      <div class="auth-wrap" id="authWrap">
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Log In</button>
+            <button class="auth-tab" data-tab="register">Sign Up</button>
+          </div>
+
+          <div class="auth-alert" id="authAlert" hidden></div>
+
+          <!-- Login -->
+          <form class="auth-form" id="loginForm">
+            <div class="field">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" placeholder="you@email.com" required />
+            </div>
+            <div class="field">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="Your password" required />
+            </div>
+            <button type="submit" class="btn btn-gold btn-block">Log In</button>
+            <p class="auth-switch">New to GOFA? <a href="#" data-goto="register">Create an account</a></p>
+          </form>
+
+          <!-- Register -->
+          <form class="auth-form" id="registerForm" hidden>
+            <div class="field">
+              <label for="regName">Full name</label>
+              <input type="text" id="regName" placeholder="Your name" required />
+            </div>
+            <div class="field">
+              <label for="regEmail">Email</label>
+              <input type="email" id="regEmail" placeholder="you@email.com" required />
+            </div>
+            <div class="field">
+              <label for="regPassword">Password</label>
+              <input type="password" id="regPassword" placeholder="Create a password" minlength="6" required />
+            </div>
+            <button type="submit" class="btn btn-gold btn-block">Create Account</button>
+            <p class="auth-switch">Already have an account? <a href="#" data-goto="login">Log in</a></p>
+          </form>
+        </div>
+
+        <aside class="auth-aside">
+          <h3>Why create an account?</h3>
+          <ul class="auth-perks">
+            <li>Your own U.S. shipping address</li>
+            <li>Live package tracking &amp; alerts</li>
+            <li>Faster customs &amp; VAT quotes</li>
+            <li>Manage and upgrade your membership</li>
+          </ul>
+          <p class="auth-aside-note">Free to join - upgrade any time.</p>
+        </aside>
+      </div>
+
+      <!-- Dashboard (shown when logged in) -->
+      <div class="dashboard" id="dashboard" hidden>
+        <div class="dash-head">
+          <div>
+            <h2 id="dashHello">Welcome back</h2>
+            <p id="dashEmail" class="muted"></p>
+          </div>
+          <button class="btn btn-outline-light" id="logoutBtn">Log Out</button>
+        </div>
+        <div class="dash-grid" id="dashShipments">
+          <!-- shipments injected from backend -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo"><span class="logo-main">GOFA</span><span class="logo-sub">SHIPPING</span></a>
+          <p>Your trusted gateway from the U.S. to Nassau and every island in The Bahamas.</p>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="index.html#how">How It Works</a>
+          <a href="index.html#rates">Rates</a>
+          <a href="index.html#services">Services</a>
+          <a href="contact.html">Contact Us</a>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <a href="account.html">Log In</a>
+          <a href="account.html">Sign Up</a>
+          <a href="tracking.html">Track Package</a>
+        </div>
+        <div>
+          <h4>Get in touch</h4>
+          <p>📞 <a href="tel:+12424275699" style="display:inline;">(242) 427-5699</a></p>
+          <p>✉️ <a href="mailto:info@gofashipping.com" style="display:inline;">info@gofashipping.com</a></p>
+          <p>📍 Nassau, The Bahamas</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 <span class="gold">GOFA SHIPPING</span>. All rights reserved.</span>
+        <span>Your gateway from the U.S. to any island.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="chatbot.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const toggle = document.getElementById('navToggle');
+    const links = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+    const alertBox = $('#authAlert');
+    function showAlert(msg, type) {
+      alertBox.hidden = false;
+      alertBox.className = 'auth-alert ' + (type || 'info');
+      alertBox.innerHTML = msg;
+    }
+    function clearAlert() { alertBox.hidden = true; alertBox.innerHTML = ''; }
+
+    // Tab switching
+    const tabs = document.querySelectorAll('.auth-tab');
+    const loginForm = $('#loginForm');
+    const registerForm = $('#registerForm');
+    function setTab(name) {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      loginForm.hidden = name !== 'login';
+      registerForm.hidden = name !== 'register';
+      clearAlert();
+    }
+    tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+    document.querySelectorAll('[data-goto]').forEach(a =>
+      a.addEventListener('click', (e) => { e.preventDefault(); setTab(a.dataset.goto); }));
+
+    function backendNotice() {
+      showAlert("⚙️ <b>Backend not connected yet.</b> Set <code>apiBaseUrl</code> in <code>config.js</code> to your API, then this form will register/log in real users. Expected: <code>POST /api/auth/login</code> and <code>/api/auth/register</code>.", 'info');
+    }
+
+    function handleError(err) {
+      if (err.code === 'BACKEND_NOT_CONFIGURED') return backendNotice();
+      if (err.code === 'NETWORK_ERROR') return showAlert("❌ " + err.message, 'error');
+      showAlert("❌ " + (err.message || 'Something went wrong.'), 'error');
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      try {
+        const data = await GofaAPI.login({
+          email: $('#loginEmail').value.trim(),
+          password: $('#loginPassword').value
+        });
+        if (data && data.token) GofaAPI.setToken(data.token);
+        renderDashboard(data && data.user);
+      } catch (err) { handleError(err); }
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+      try {
+        const data = await GofaAPI.register({
+          name: $('#regName').value.trim(),
+          email: $('#regEmail').value.trim(),
+          password: $('#regPassword').value
+        });
+        if (data && data.token) GofaAPI.setToken(data.token);
+        renderDashboard(data && data.user);
+      } catch (err) { handleError(err); }
+    });
+
+    function renderDashboard(user) {
+      $('#authWrap').hidden = true;
+      const dash = $('#dashboard');
+      dash.hidden = false;
+      $('#dashHello').textContent = 'Welcome back' + (user && user.name ? ', ' + user.name.split(' ')[0] : '');
+      $('#dashEmail').textContent = user && user.email ? user.email : '';
+    }
+
+    $('#logoutBtn').addEventListener('click', () => {
+      GofaAPI.logout();
+      $('#dashboard').hidden = true;
+      $('#authWrap').hidden = false;
+    });
+
+    // If a token exists and backend is configured, try to restore session
+    (async function init() {
+      if (GofaAPI.isConfigured() && GofaAPI.getToken()) {
+        try {
+          const data = await GofaAPI.me();
+          renderDashboard(data && data.user);
+          const grid = $('#dashShipments');
+          const shipments = (data && data.shipments) || [];
+          grid.innerHTML = shipments.length ? '' :
+            '<div class="dash-empty">No shipments yet. Once you ship, they\'ll appear here.</div>';
+        } catch (_) { /* stay on login */ }
+      }
+    })();
+  </script>
+</body>
+</html>

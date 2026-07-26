@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Your Package - GOFA SHIPPING</title>
+  <meta name="description" content="Track your GOFA Shipping package in real time. Enter your tracking number to see status, location, and estimated delivery." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Top info bar -->
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="tagline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="color:var(--gold-400)"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        Your Gateway From the U.S. to <b>Any Island</b>
+      </div>
+      <div class="tb-right">
+        <a class="tb-item" href="tel:+12424275699"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z"/></svg>(242) 427-5699</a>
+        <a class="tb-item" href="mailto:info@gofashipping.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7L22 6"/></svg>info@gofashipping.com</a>
+        <span class="tb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Nassau, The Bahamas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav">
+      <a href="index.html" class="logo">
+        <span class="logo-main">GOFA</span>
+        <span class="logo-sub">SHIPPING</span>
+        <svg class="swoosh" viewBox="0 0 78 8"><path d="M2 6 C24 1 54 1 76 3" fill="none" stroke="#f5b421" stroke-width="4" stroke-linecap="round"/></svg>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="index.html#how">How It Works</a>
+        <a href="index.html#rates">Rates</a>
+        <a href="index.html#membership">Memberships</a>
+        <div class="nav-item">
+          <a>Services <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></a>
+          <div class="dropdown">
+            <a href="index.html#services">Ocean Freight</a>
+            <a href="index.html#services">Package Consolidation</a>
+            <a href="index.html#services">Customs Clearance</a>
+            <a href="index.html#services">Family Island Delivery</a>
+          </div>
+        </div>
+        <a href="tracking.html" class="active">Track Package</a>
+        <a href="contact.html">Contact Us</a>
+      </nav>
+      <div class="nav-auth">
+        <a href="account.html" class="btn btn-ghost"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login</a>
+        <a href="account.html" class="btn btn-gold"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Sign Up</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <!-- Tracking hero + search -->
+  <section class="track-hero">
+    <div class="container">
+      <h1>Track Your <span class="script">Package</span></h1>
+      <p>Enter your tracking number below to see the latest status and estimated delivery.</p>
+      <form class="track-search" id="trackForm">
+        <input type="text" id="trackInput" placeholder="e.g. GOFA-284419" aria-label="Tracking number" />
+        <button type="submit" class="btn btn-gold">Track Now</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="section" style="padding-top:40px;">
+    <div class="container">
+      <div id="trackResult" class="track-result"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo"><span class="logo-main">GOFA</span><span class="logo-sub">SHIPPING</span></a>
+          <p>Your trusted gateway from the U.S. to Nassau and every island in The Bahamas.</p>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="index.html#how">How It Works</a>
+          <a href="index.html#rates">Rates</a>
+          <a href="index.html#services">Services</a>
+          <a href="contact.html">Contact Us</a>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <a href="account.html">Log In</a>
+          <a href="account.html">Sign Up</a>
+          <a href="tracking.html">Track Package</a>
+        </div>
+        <div>
+          <h4>Get in touch</h4>
+          <p>📞 <a href="tel:+12424275699" style="display:inline;">(242) 427-5699</a></p>
+          <p>✉️ <a href="mailto:info@gofashipping.com" style="display:inline;">info@gofashipping.com</a></p>
+          <p>📍 Nassau, The Bahamas</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 <span class="gold">GOFA SHIPPING</span>. All rights reserved.</span>
+        <span>Your gateway from the U.S. to any island.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="chatbot.js"></script>
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const links = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+    const form = document.getElementById('trackForm');
+    const input = document.getElementById('trackInput');
+    const result = document.getElementById('trackResult');
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function loading(tn) {
+      result.innerHTML = `<div class="track-loading">🔎 Looking up <b>${esc(tn)}</b>…</div>`;
+    }
+
+    function notConfigured(tn) {
+      result.innerHTML = `
+        <div class="track-card-panel notice">
+          <h3>⚙️ Tracking backend not connected yet</h3>
+          <p>The tracking UI is ready. To make it live, set <code>apiBaseUrl</code> in <code>config.js</code> to your API. This page will call:</p>
+          <pre>GET {apiBaseUrl}/api/tracking/${esc(tn || ':trackingNumber')}</pre>
+          <p>Expected response:</p>
+          <pre>{
+  "trackingNumber": "${esc(tn || 'GOFA-284419')}",
+  "status": "In Transit",
+  "origin": "Miami, FL",
+  "destination": "Nassau, Bahamas",
+  "eta": "2 days",
+  "events": [
+    { "status": "Picked up", "location": "Miami, FL", "timestamp": "2026-07-24T09:00:00Z", "done": true },
+    { "status": "Departed port", "location": "Miami, FL", "timestamp": "2026-07-25T18:00:00Z", "done": true },
+    { "status": "In transit", "location": "At sea", "timestamp": "2026-07-26T08:00:00Z", "done": false }
+  ]
+}</pre>
+          <p class="muted">Need help wiring this up? <a href="contact.html">Contact us</a>.</p>
+        </div>`;
+    }
+
+    function errorMsg(msg) {
+      result.innerHTML = `<div class="track-card-panel error"><h3>❌ ${esc(msg)}</h3><p>Please check the tracking number and try again, or <a href="contact.html">contact us</a>.</p></div>`;
+    }
+
+    function render(data) {
+      const events = Array.isArray(data.events) ? data.events : [];
+      const steps = events.map(ev => `
+        <li class="track-step ${ev.done ? 'done' : 'current'}">
+          <span class="dot"></span>
+          <div>
+            <strong>${esc(ev.status)}</strong>
+            <small>${esc(ev.location || '')}${ev.timestamp ? ' · ' + new Date(ev.timestamp).toLocaleString() : ''}</small>
+          </div>
+        </li>`).join('');
+
+      result.innerHTML = `
+        <div class="track-card-panel">
+          <div class="track-summary">
+            <div>
+              <small>Tracking number</small>
+              <h3>${esc(data.trackingNumber || '')}</h3>
+            </div>
+            <span class="track-badge">${esc(data.status || 'Unknown')}</span>
+          </div>
+          <div class="track-route">
+            <div><small>From</small><strong>${esc(data.origin || '-')}</strong></div>
+            <div class="track-arrow">→</div>
+            <div><small>To</small><strong>${esc(data.destination || '-')}</strong></div>
+            <div><small>ETA</small><strong>${esc(data.eta || '-')}</strong></div>
+          </div>
+          ${steps ? `<ul class="track-timeline">${steps}</ul>` : '<p class="muted">No status events available yet.</p>'}
+        </div>`;
+    }
+
+    async function track(tn) {
+      if (!tn) { input.focus(); return; }
+      loading(tn);
+      try {
+        const data = await GofaAPI.track(tn);
+        render(data);
+      } catch (err) {
+        if (err.code === 'BACKEND_NOT_CONFIGURED') return notConfigured(tn);
+        errorMsg(err.message || 'Could not fetch tracking info.');
+      }
+    }
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); track(input.value.trim()); });
+
+    // Auto-track if arriving from the homepage hero card with ?tn=
+    const params = new URLSearchParams(location.search);
+    const initial = params.get('tn');
+    if (initial) { input.value = initial; track(initial); }
+  </script>
+</body>
+</html>

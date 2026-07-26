@@ -1,0 +1,31 @@
+/* GOFA SHIPPING - front-end configuration
+ * ------------------------------------------------------------------
+ * Set apiBaseUrl to your backend URL to activate accounts + tracking.
+ * Example: apiBaseUrl: "https://api.gofashipping.com"
+ * While it is empty, the account and tracking pages run in "not
+ * connected" mode and show clear setup instructions (no fake data).
+ * ------------------------------------------------------------------ */
+window.GOFA_CONFIG = {
+  // Base URL of your API (no trailing slash). Leave "" until you have one.
+  apiBaseUrl: "",
+
+  // ---- Contact / quote form (Web3Forms - free, 250 submissions/mo) ----
+  // 1. Go to https://web3forms.com and enter gofabahamas@gmail.com to get
+  //    your free Access Key (no signup needed - it emails you the key).
+  // 2. Paste the key below (looks like a long UUID).
+  // Submissions then email straight to gofabahamas@gmail.com.
+  // Until it is set, the form falls back to opening the visitor's email app.
+  web3formsAccessKey: "7432ec79-e8f5-4f8e-be03-ed65d457b047",
+
+  // Endpoint paths your backend should expose (relative to apiBaseUrl):
+  //   POST {apiBaseUrl}/api/auth/register   { name, email, password }         -> { token, user }
+  //   POST {apiBaseUrl}/api/auth/login      { email, password }               -> { token, user }
+  //   GET  {apiBaseUrl}/api/auth/me         (Bearer token)                    -> { user, shipments }
+  //   GET  {apiBaseUrl}/api/tracking/:id                                      -> { trackingNumber, status, origin, destination, eta, events: [{ status, location, timestamp, done }] }
+  endpoints: {
+    register: "/api/auth/register",
+    login: "/api/auth/login",
+    me: "/api/auth/me",
+    tracking: "/api/tracking/"
+  }
+};
