@@ -487,11 +487,14 @@ img, svg { display: block; max-width: 100%; }
 .status-badge.bad { background: rgba(225,75,75,.15); color: #b23636; }
 .status-badge.neutral { background: rgba(95,107,133,.15); color: var(--slate); }
 
-.row-del {
-  background: rgba(225,75,75,.1); border: 1px solid rgba(225,75,75,.35); color: #b23636;
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.row-edit, .row-del {
   width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 1rem; line-height: 1;
   transition: all .15s ease;
 }
+.row-edit { background: rgba(47,127,228,.1); border: 1px solid rgba(47,127,228,.35); color: var(--blue); }
+.row-edit:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.row-del { background: rgba(225,75,75,.1); border: 1px solid rgba(225,75,75,.35); color: #b23636; }
 .row-del:hover { background: #e14b4b; color: #fff; border-color: #e14b4b; }
 
 /* Modal */

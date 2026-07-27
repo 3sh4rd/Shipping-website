@@ -239,7 +239,7 @@
           <td>${esc(o.date)}</td>
           <td>${badge(o.status)}</td>
           <td class="ta-right">${money(o.total)}</td>
-          <td class="ta-right"><button class="row-del" data-type="order" data-id="${esc(o.id)}" title="Delete">🗑</button></td>
+          <td class="ta-right row-actions"><button class="row-edit" data-type="order" data-id="${esc(o.id)}" title="Edit">✎</button><button class="row-del" data-type="order" data-id="${esc(o.id)}" title="Delete">🗑</button></td>
         </tr>`).join('') : emptyRow(7, q ? 'No matching orders.' : 'No orders yet. Click + New to add one.');
     }
 
@@ -254,7 +254,7 @@
           <td>${esc(i.due)}</td>
           <td>${badge(i.status)}</td>
           <td class="ta-right">${money(i.amount)}</td>
-          <td class="ta-right"><button class="row-del" data-type="invoice" data-id="${esc(i.id)}" title="Delete">🗑</button></td>
+          <td class="ta-right row-actions"><button class="row-edit" data-type="invoice" data-id="${esc(i.id)}" title="Edit">✎</button><button class="row-del" data-type="invoice" data-id="${esc(i.id)}" title="Delete">🗑</button></td>
         </tr>`).join('') : emptyRow(7, q ? 'No matching invoices.' : 'No invoices yet. Click + New to add one.');
     }
 
@@ -310,13 +310,15 @@
     const overlay = $('#modalOverlay');
     const modalAlert = $('#modalAlert');
     let modalType = 'order';
+    let editingId = null;
 
-    function openModal(type) {
+    function openModal(type, record) {
       modalType = type;
+      editingId = record ? record.id : null;
       modalAlert.hidden = true;
       $('#entityForm').reset();
       const isOrder = type === 'order';
-      $('#modalTitle').textContent = isOrder ? 'New Order' : 'New Invoice';
+      $('#modalTitle').textContent = (record ? 'Edit ' : 'New ') + (isOrder ? 'Order' : 'Invoice');
       $('#lblId').textContent = isOrder ? 'Order #' : 'Invoice #';
       $('#fId').placeholder = isOrder ? 'GOFA-1005' : 'INV-2005';
       $('#lblDate1').textContent = isOrder ? 'Date' : 'Issued date';
@@ -327,7 +329,27 @@
         ? ['Pending', 'Processing', 'In Transit', 'Delivered']
         : ['Unpaid', 'Paid', 'Overdue'];
       $('#fStatus').innerHTML = statuses.map(s => `<option>${s}</option>`).join('');
-      $('#fDate1').value = new Date().toISOString().slice(0, 10);
+
+      if (record) {
+        // Editing: prefill and lock the ID (it's the record key)
+        $('#fId').value = record.id;
+        $('#fId').readOnly = true;
+        $('#fCustomer').value = record.customer || '';
+        $('#fEmail').value = record.email || '';
+        if (isOrder) {
+          $('#fService').value = record.service || 'Ocean Freight';
+          $('#fDate1').value = record.date || '';
+          $('#fAmount').value = record.total != null ? record.total : '';
+        } else {
+          $('#fDate1').value = record.issued || '';
+          $('#fDate2').value = record.due || '';
+          $('#fAmount').value = record.amount != null ? record.amount : '';
+        }
+        $('#fStatus').value = record.status || statuses[0];
+      } else {
+        $('#fId').readOnly = false;
+        $('#fDate1').value = new Date().toISOString().slice(0, 10);
+      }
       overlay.hidden = false;
       $('#fId').focus();
     }
@@ -344,7 +366,7 @@
       saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = 'Saving…';
       try {
         if (modalType === 'order') {
-          await GofaAPI.adminCreateOrder({
+          const payload = {
             id: $('#fId').value.trim(),
             customer: $('#fCustomer').value.trim(),
             email: $('#fEmail').value.trim(),
@@ -352,9 +374,11 @@
             date: $('#fDate1').value,
             status: $('#fStatus').value,
             total: $('#fAmount').value
-          });
+          };
+          if (editingId) await GofaAPI.adminUpdateOrder(editingId, payload);
+          else await GofaAPI.adminCreateOrder(payload);
         } else {
-          await GofaAPI.adminCreateInvoice({
+          const payload = {
             id: $('#fId').value.trim(),
             customer: $('#fCustomer').value.trim(),
             email: $('#fEmail').value.trim(),
@@ -362,7 +386,9 @@
             due: $('#fDate2').value,
             status: $('#fStatus').value,
             amount: $('#fAmount').value
-          });
+          };
+          if (editingId) await GofaAPI.adminUpdateInvoice(editingId, payload);
+          else await GofaAPI.adminCreateInvoice(payload);
         }
         closeModal();
         await loadData();
@@ -374,7 +400,16 @@
       }
     });
 
-    // ---- Delete rows (event delegation) ----
+    // ---- Edit rows ----
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.row-edit');
+      if (!btn) return;
+      const { type, id } = btn.dataset;
+      const record = (type === 'order' ? ordersData : invoicesData).find(r => String(r.id) === String(id));
+      if (record) openModal(type, record);
+    });
+
+    // ---- Delete rows ----
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.row-del');
       if (!btn) return;

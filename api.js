@@ -64,8 +64,10 @@
     adminOrders: () => request(ep.adminOrders || "/api/admin/orders"),
     adminInvoices: () => request(ep.adminInvoices || "/api/admin/invoices"),
     adminCreateOrder: (payload) => request(ep.adminOrders || "/api/admin/orders", { method: "POST", body: payload }),
+    adminUpdateOrder: (id, payload) => request((ep.adminOrders || "/api/admin/orders") + "/" + encodeURIComponent(id), { method: "PATCH", body: payload }),
     adminDeleteOrder: (id) => request((ep.adminOrders || "/api/admin/orders") + "/" + encodeURIComponent(id), { method: "DELETE" }),
     adminCreateInvoice: (payload) => request(ep.adminInvoices || "/api/admin/invoices", { method: "POST", body: payload }),
+    adminUpdateInvoice: (id, payload) => request((ep.adminInvoices || "/api/admin/invoices") + "/" + encodeURIComponent(id), { method: "PATCH", body: payload }),
     adminDeleteInvoice: (id) => request((ep.adminInvoices || "/api/admin/invoices") + "/" + encodeURIComponent(id), { method: "DELETE" })
   };
 })();

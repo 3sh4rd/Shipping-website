@@ -144,7 +144,11 @@ app.post("/api/admin/orders", auth("admin"), wrap(async (req, res) => {
   res.status(201).json(rows[0]);
 }));
 app.patch("/api/admin/orders/:id", auth("admin"), wrap(async (req, res) => {
-  const { rows } = await pool.query("UPDATE orders SET status = $1 WHERE id = $2 RETURNING *", [req.body.status, req.params.id]);
+  const { customer, email, service, date, status, total } = req.body || {};
+  const { rows } = await pool.query(
+    "UPDATE orders SET customer=$1, email=$2, service=$3, date=$4, status=$5, total=$6 WHERE id=$7 RETURNING *",
+    [customer, email || null, service || null, date || null, status || "Pending", Number(total) || 0, req.params.id]
+  );
   if (!rows.length) return res.status(404).json({ message: "Order not found." });
   res.json(rows[0]);
 }));
@@ -167,7 +171,11 @@ app.post("/api/admin/invoices", auth("admin"), wrap(async (req, res) => {
   res.status(201).json(rows[0]);
 }));
 app.patch("/api/admin/invoices/:id", auth("admin"), wrap(async (req, res) => {
-  const { rows } = await pool.query("UPDATE invoices SET status = $1 WHERE id = $2 RETURNING *", [req.body.status, req.params.id]);
+  const { customer, email, issued, due, status, amount } = req.body || {};
+  const { rows } = await pool.query(
+    "UPDATE invoices SET customer=$1, email=$2, issued=$3, due=$4, status=$5, amount=$6 WHERE id=$7 RETURNING *",
+    [customer, email || null, issued || null, due || null, status || "Unpaid", Number(amount) || 0, req.params.id]
+  );
   if (!rows.length) return res.status(404).json({ message: "Invoice not found." });
   res.json(rows[0]);
 }));
