@@ -30,6 +30,20 @@
 [hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 
+/* Promo bar */
+.promo-bar { background: linear-gradient(90deg, var(--gold-400), var(--gold-600)); color: var(--navy-900); text-align: center; font-size: .9rem; font-weight: 600; padding: 9px 16px; font-family: var(--font-body); }
+.promo-bar b { font-weight: 800; }
+.promo-bar a { color: var(--navy-900); text-decoration: underline; font-weight: 800; white-space: nowrap; }
+
+/* Quote promo + discount rows */
+.qs-promo { display: flex; gap: 8px; margin: 12px 0 6px; }
+.qs-promo input { flex: 1; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 9px; font-family: var(--font-body); text-transform: uppercase; }
+.qs-promo .btn { padding: 9px 18px; }
+.qs-note { font-size: .82rem; margin: 2px 0 0; }
+.qs-note.ok { color: #1f7a4d; }
+.qs-note.bad { color: #b23636; }
+.qs-row.discount b { color: #1f7a4d; }
+
 /* Scroll-triggered shine sweep for navy sections */
 .nav-shine { position: relative; overflow: hidden; }
 .nav-shine::after {

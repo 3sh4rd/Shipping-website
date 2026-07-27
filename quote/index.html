@@ -126,7 +126,14 @@
           <div class="qs-row"><span>Processing Fee (1%, min $10 / max $750)</span><b id="sumProc">$0.00</b></div>
           <div class="qs-row"><span>Environmental Levy <input type="number" id="levyInput" min="0" step="0.01" value="0" /></span><b id="sumLevy">$0.00</b></div>
           <div class="qs-row"><span>Customs Item VAT (10%)</span><b id="sumVat">$0.00</b></div>
-          <div class="qs-row total"><span>Total customs &amp; fees</span><b id="sumTotal">$0.00</b></div>
+          <div class="qs-row"><span>Subtotal (customs &amp; fees)</span><b id="sumSubtotal">$0.00</b></div>
+          <div class="qs-promo">
+            <input type="text" id="promoInput" placeholder="Promo code (e.g. WELCOME15)" />
+            <button type="button" class="btn btn-navy" id="applyPromo">Apply</button>
+          </div>
+          <p class="qs-note" id="promoNote" hidden></p>
+          <div class="qs-row discount" id="discountRow" hidden><span id="discountLabel">Discount</span><b id="sumDiscount">-$0.00</b></div>
+          <div class="qs-row total"><span>Total due</span><b id="sumTotal">$0.00</b></div>
         </div>
       </div>
 
@@ -184,6 +191,19 @@
 
     let selectedFile = null, base64 = null, quote = null;
     let RULES = { vatRate: 0.10, processingRate: 0.01 };
+    let memberPct = 0, promoPct = 0;
+
+    // Detect a logged-in paid member (their plan gives 10% off)
+    (async function detectMember() {
+      try {
+        if (window.GofaAPI && GofaAPI.isConfigured() && GofaAPI.getToken()) {
+          const d = await GofaAPI.me();
+          const plan = (d && d.user && d.user.plan || '').toLowerCase();
+          if (['plus', 'business', 'family'].includes(plan)) memberPct = 10;
+          if (memberPct && !document.getElementById('quoteResult').hidden) recompute();
+        }
+      } catch (_) {}
+    })();
 
     // ---- File selection ----
     const dropzone = $('#dropzone'), fileInput = $('#fileInput');
@@ -275,14 +295,43 @@
       if (valueTotal > 0) processing = Math.min(pMax, Math.max(pMin, processing)); else processing = 0;
       const levy = Math.max(0, Number($('#levyInput').value) || 0);
       const vat = (valueTotal + dutyTotal + processing + levy) * (RULES.vatRate || 0.10);
-      const total = dutyTotal + processing + levy + vat;
+      const subtotal = dutyTotal + processing + levy + vat;
+
+      // Non-stacking: apply the bigger of member discount vs promo
+      const discPct = Math.max(memberPct, promoPct);
+      const discount = subtotal * discPct / 100;
+      const total = subtotal - discount;
+
       $('#sumDuty').textContent = money(dutyTotal);
       $('#sumProc').textContent = money(processing);
       $('#sumLevy').textContent = money(levy);
       $('#sumVat').textContent = money(vat);
+      $('#sumSubtotal').textContent = money(subtotal);
+
+      const discRow = $('#discountRow');
+      if (discPct > 0) {
+        discRow.hidden = false;
+        $('#discountLabel').textContent = (promoPct >= memberPct && promoPct > 0)
+          ? 'Discount (WELCOME15 - 15%)'
+          : 'Member discount (10%)';
+        $('#sumDiscount').textContent = '-' + money(discount);
+      } else {
+        discRow.hidden = true;
+      }
       $('#sumTotal').textContent = money(total);
-      quote._totals = { valueTotal, dutyTotal, processing, levy, vat, total };
+      quote._totals = { valueTotal, dutyTotal, processing, levy, vat, subtotal, discPct, discount, total };
     }
+
+    // Promo code
+    $('#applyPromo').addEventListener('click', () => {
+      const code = $('#promoInput').value.trim().toUpperCase();
+      const note = $('#promoNote');
+      note.hidden = false;
+      if (code === 'WELCOME15') { promoPct = 15; note.className = 'qs-note ok'; note.textContent = '✓ WELCOME15 applied - 15% off (new customers).'; }
+      else if (!code) { promoPct = 0; note.hidden = true; }
+      else { promoPct = 0; note.className = 'qs-note bad'; note.textContent = 'That code is not valid.'; }
+      recompute();
+    });
 
     document.addEventListener('input', (e) => { if (e.target.closest('#quoteResult')) recompute(); });
     document.addEventListener('click', (e) => {
@@ -325,6 +374,11 @@
       line('Processing Fee (1%)', money(t.processing));
       line('Environmental Levy', money(t.levy));
       line('Customs Item VAT (10%)', money(t.vat));
+      line('Subtotal', money(t.subtotal));
+      if (t.discPct > 0) {
+        const dl = (promoPct >= memberPct && promoPct > 0) ? 'Discount (WELCOME15 15%)' : 'Member discount (10%)';
+        line(dl, '-' + money(t.discount));
+      }
       y += 2; line('Total', money(t.total), true);
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(120);
       doc.text('AI-generated estimate by GOFA Shipping. Final duty is determined by Bahamas Customs.', 14, 285);
