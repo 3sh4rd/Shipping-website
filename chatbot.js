@@ -27,7 +27,7 @@
     },
     {
       keys: ["hour", "open", "time", "when are you"],
-      answer: "We're open <b>Monday–Friday, 8:00 AM – 5:00 PM</b>. You can reach us anytime by email and we usually reply within one business day."
+      answer: "We're open <b>Monday–Friday, 8:00 AM – 5:00 PM</b> and <b>Saturday, 9:00 AM – 12:00 PM</b> (half day). You can reach us anytime by email and we usually reply within one business day."
     },
     {
       keys: ["contact", "phone", "call", "email", "reach", "number", "address", "location"],
