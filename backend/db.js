@@ -68,6 +68,12 @@ async function init() {
 }
 
 async function seed() {
+  // Sample data only loads when SEED_SAMPLE=true. Leave it unset in
+  // production so the dashboard stays clean and shows only real records.
+  if (process.env.SEED_SAMPLE !== "true") {
+    console.log("SEED_SAMPLE not enabled - skipping sample data.");
+    return;
+  }
   const { rows } = await pool.query("SELECT COUNT(*)::int AS c FROM users");
   if (rows[0].c > 0) {
     console.log("Database already has data - skipping seed.");

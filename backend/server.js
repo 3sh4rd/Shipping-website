@@ -148,6 +148,11 @@ app.patch("/api/admin/orders/:id", auth("admin"), wrap(async (req, res) => {
   if (!rows.length) return res.status(404).json({ message: "Order not found." });
   res.json(rows[0]);
 }));
+app.delete("/api/admin/orders/:id", auth("admin"), wrap(async (req, res) => {
+  const { rowCount } = await pool.query("DELETE FROM orders WHERE id = $1", [req.params.id]);
+  if (!rowCount) return res.status(404).json({ message: "Order not found." });
+  res.status(204).end();
+}));
 
 app.get("/api/admin/invoices", auth("admin"), wrap(async (_req, res) => {
   res.json((await pool.query("SELECT * FROM invoices ORDER BY issued DESC")).rows);
@@ -165,6 +170,11 @@ app.patch("/api/admin/invoices/:id", auth("admin"), wrap(async (req, res) => {
   const { rows } = await pool.query("UPDATE invoices SET status = $1 WHERE id = $2 RETURNING *", [req.body.status, req.params.id]);
   if (!rows.length) return res.status(404).json({ message: "Invoice not found." });
   res.json(rows[0]);
+}));
+app.delete("/api/admin/invoices/:id", auth("admin"), wrap(async (req, res) => {
+  const { rowCount } = await pool.query("DELETE FROM invoices WHERE id = $1", [req.params.id]);
+  if (!rowCount) return res.status(404).json({ message: "Invoice not found." });
+  res.status(204).end();
 }));
 
 app.get("/api/admin/customers", auth("admin"), wrap(async (_req, res) => {

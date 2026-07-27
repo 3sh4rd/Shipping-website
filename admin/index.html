@@ -52,7 +52,10 @@
           <h1>Dashboard</h1>
           <p class="muted">Orders &amp; invoices overview</p>
         </div>
-        <button class="btn btn-navy" id="refreshBtn">↻ Refresh</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-gold" id="newBtn">+ New</button>
+          <button class="btn btn-navy" id="refreshBtn">↻ Refresh</button>
+        </div>
       </div>
 
       <!-- Summary cards -->
@@ -75,7 +78,7 @@
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
-              <tr><th>Order #</th><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th class="ta-right">Total</th></tr>
+              <tr><th>Order #</th><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th class="ta-right">Total</th><th></th></tr>
             </thead>
             <tbody id="ordersBody"></tbody>
           </table>
@@ -87,7 +90,7 @@
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
-              <tr><th>Invoice #</th><th>Customer</th><th>Issued</th><th>Due</th><th>Status</th><th class="ta-right">Amount</th></tr>
+              <tr><th>Invoice #</th><th>Customer</th><th>Issued</th><th>Due</th><th>Status</th><th class="ta-right">Amount</th><th></th></tr>
             </thead>
             <tbody id="invoicesBody"></tbody>
           </table>
@@ -96,6 +99,42 @@
 
     </div>
   </main>
+
+  <!-- New order/invoice modal -->
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modalTitle">New Order</h3>
+        <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="admin-alert" id="modalAlert" hidden></div>
+      <form id="entityForm">
+        <div class="field-row">
+          <div class="field"><label id="lblId">Order #</label><input id="fId" required placeholder="GOFA-1005" /></div>
+          <div class="field"><label>Customer name</label><input id="fCustomer" required placeholder="Full name" /></div>
+        </div>
+        <div class="field"><label>Customer email</label><input id="fEmail" type="email" placeholder="customer@email.com" /></div>
+        <div class="field order-only"><label>Service</label>
+          <select id="fService">
+            <option>Ocean Freight</option>
+            <option>Air Freight</option>
+            <option>Package Consolidation</option>
+            <option>Family Island Delivery</option>
+            <option>Customs Clearance</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label id="lblDate1">Date</label><input id="fDate1" type="date" /></div>
+          <div class="field invoice-only"><label>Due date</label><input id="fDate2" type="date" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Status</label><select id="fStatus"></select></div>
+          <div class="field"><label id="lblAmount">Total ($)</label><input id="fAmount" type="number" step="0.01" min="0" placeholder="0.00" /></div>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block" id="saveBtn">Save</button>
+      </form>
+    </div>
+  </div>
 
   <script src="/config.js"></script>
   <script src="/api.js"></script>
@@ -200,7 +239,8 @@
           <td>${esc(o.date)}</td>
           <td>${badge(o.status)}</td>
           <td class="ta-right">${money(o.total)}</td>
-        </tr>`).join('') : emptyRow(6, q ? 'No matching orders.' : 'No orders yet.');
+          <td class="ta-right"><button class="row-del" data-type="order" data-id="${esc(o.id)}" title="Delete">🗑</button></td>
+        </tr>`).join('') : emptyRow(7, q ? 'No matching orders.' : 'No orders yet. Click + New to add one.');
     }
 
     function renderInvoices(list) {
@@ -214,7 +254,8 @@
           <td>${esc(i.due)}</td>
           <td>${badge(i.status)}</td>
           <td class="ta-right">${money(i.amount)}</td>
-        </tr>`).join('') : emptyRow(6, q ? 'No matching invoices.' : 'No invoices yet.');
+          <td class="ta-right"><button class="row-del" data-type="invoice" data-id="${esc(i.id)}" title="Delete">🗑</button></td>
+        </tr>`).join('') : emptyRow(7, q ? 'No matching invoices.' : 'No invoices yet. Click + New to add one.');
     }
 
     function renderSummary() {
@@ -235,8 +276,8 @@
       } catch (err) {
         ordersData = [];
         $('#ordersBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
-          ? notConfiguredRow(6, CFG.endpoints.adminOrders)
-          : emptyRow(6, 'Could not load orders: ' + (err.message || 'error'));
+          ? notConfiguredRow(7, CFG.endpoints.adminOrders)
+          : emptyRow(7, 'Could not load orders: ' + (err.message || 'error'));
       }
       // Invoices
       try {
@@ -246,8 +287,8 @@
       } catch (err) {
         invoicesData = [];
         $('#invoicesBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
-          ? notConfiguredRow(6, CFG.endpoints.adminInvoices)
-          : emptyRow(6, 'Could not load invoices: ' + (err.message || 'error'));
+          ? notConfiguredRow(7, CFG.endpoints.adminInvoices)
+          : emptyRow(7, 'Could not load invoices: ' + (err.message || 'error'));
       }
       renderSummary();
     }
@@ -262,6 +303,91 @@
     }));
     $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); });
     $('#refreshBtn').addEventListener('click', loadData);
+
+    function currentTab() { return document.querySelector('.admin-tab.active').dataset.tab; }
+
+    // ---- New order / invoice modal ----
+    const overlay = $('#modalOverlay');
+    const modalAlert = $('#modalAlert');
+    let modalType = 'order';
+
+    function openModal(type) {
+      modalType = type;
+      modalAlert.hidden = true;
+      $('#entityForm').reset();
+      const isOrder = type === 'order';
+      $('#modalTitle').textContent = isOrder ? 'New Order' : 'New Invoice';
+      $('#lblId').textContent = isOrder ? 'Order #' : 'Invoice #';
+      $('#fId').placeholder = isOrder ? 'GOFA-1005' : 'INV-2005';
+      $('#lblDate1').textContent = isOrder ? 'Date' : 'Issued date';
+      $('#lblAmount').textContent = isOrder ? 'Total ($)' : 'Amount ($)';
+      document.querySelectorAll('.order-only').forEach(e => e.hidden = !isOrder);
+      document.querySelectorAll('.invoice-only').forEach(e => e.hidden = isOrder);
+      const statuses = isOrder
+        ? ['Pending', 'Processing', 'In Transit', 'Delivered']
+        : ['Unpaid', 'Paid', 'Overdue'];
+      $('#fStatus').innerHTML = statuses.map(s => `<option>${s}</option>`).join('');
+      $('#fDate1').value = new Date().toISOString().slice(0, 10);
+      overlay.hidden = false;
+      $('#fId').focus();
+    }
+    function closeModal() { overlay.hidden = true; }
+
+    $('#newBtn').addEventListener('click', () => openModal(currentTab()));
+    $('#modalClose').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    $('#entityForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      modalAlert.hidden = true;
+      const saveBtn = $('#saveBtn');
+      saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = 'Saving…';
+      try {
+        if (modalType === 'order') {
+          await GofaAPI.adminCreateOrder({
+            id: $('#fId').value.trim(),
+            customer: $('#fCustomer').value.trim(),
+            email: $('#fEmail').value.trim(),
+            service: $('#fService').value,
+            date: $('#fDate1').value,
+            status: $('#fStatus').value,
+            total: $('#fAmount').value
+          });
+        } else {
+          await GofaAPI.adminCreateInvoice({
+            id: $('#fId').value.trim(),
+            customer: $('#fCustomer').value.trim(),
+            email: $('#fEmail').value.trim(),
+            issued: $('#fDate1').value,
+            due: $('#fDate2').value,
+            status: $('#fStatus').value,
+            amount: $('#fAmount').value
+          });
+        }
+        closeModal();
+        await loadData();
+      } catch (err) {
+        modalAlert.hidden = false;
+        modalAlert.textContent = err.message ? '❌ ' + err.message : '❌ Could not save. Check the fields and try again.';
+      } finally {
+        saveBtn.disabled = false; saveBtn.textContent = orig;
+      }
+    });
+
+    // ---- Delete rows (event delegation) ----
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.row-del');
+      if (!btn) return;
+      const { type, id } = btn.dataset;
+      if (!confirm(`Delete ${type} ${id}? This cannot be undone.`)) return;
+      try {
+        if (type === 'order') await GofaAPI.adminDeleteOrder(id);
+        else await GofaAPI.adminDeleteInvoice(id);
+        await loadData();
+      } catch (err) {
+        alert('Could not delete: ' + (err.message || 'error'));
+      }
+    });
 
     // ---- Restore session ----
     if (sessionStorage.getItem(SESSION_KEY) === '1') enterDashboard();

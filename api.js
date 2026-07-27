@@ -62,6 +62,10 @@
     track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber)),
     adminLogin: (payload) => request(ep.adminLogin || "/api/admin/login", { method: "POST", body: payload }),
     adminOrders: () => request(ep.adminOrders || "/api/admin/orders"),
-    adminInvoices: () => request(ep.adminInvoices || "/api/admin/invoices")
+    adminInvoices: () => request(ep.adminInvoices || "/api/admin/invoices"),
+    adminCreateOrder: (payload) => request(ep.adminOrders || "/api/admin/orders", { method: "POST", body: payload }),
+    adminDeleteOrder: (id) => request((ep.adminOrders || "/api/admin/orders") + "/" + encodeURIComponent(id), { method: "DELETE" }),
+    adminCreateInvoice: (payload) => request(ep.adminInvoices || "/api/admin/invoices", { method: "POST", body: payload }),
+    adminDeleteInvoice: (id) => request((ep.adminInvoices || "/api/admin/invoices") + "/" + encodeURIComponent(id), { method: "DELETE" })
   };
 })();
