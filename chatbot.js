@@ -7,11 +7,11 @@
   const KB = [
     {
       keys: ["rate", "price", "cost", "how much", "fee", "charge", "quote"],
-      answer: "Our shipping rates start at:<br>• Ocean freight - <b>$7.50</b> / cu ft (consolidated)<br>• Air freight - <b>$4.25</b> / lb (2–3 days)<br>• Package consolidation - <b>$5.00</b><br>Customs duty &amp; VAT are calculated at checkout. Want a personalized quote? Visit our <a href='contact.html'>Contact page</a>."
+      answer: "Our shipping rates start at:<br>• Ocean freight - <b>$7.50</b> / cu ft (consolidated)<br>• Air freight - <b>$4.25</b> / lb (2–3 days)<br>• Package consolidation - <b>$5.00</b><br>Customs duty &amp; VAT are calculated at checkout. Want a personalized quote? Visit our <a href='/contact/'>Contact page</a>."
     },
     {
       keys: ["track", "where is", "package status", "tracking number", "parcel"],
-      answer: "You can track any shipment on our <a href='tracking.html'>Track Package</a> page - just enter your tracking number. You can also track right from the card on our homepage."
+      answer: "You can track any shipment on our <a href='/tracking/'>Track Package</a> page - just enter your tracking number. You can also track right from the card on our homepage."
     },
     {
       keys: ["customs", "vat", "duty", "tax", "clearance", "invoice"],
@@ -19,7 +19,7 @@
     },
     {
       keys: ["member", "membership", "plan", "upgrade", "subscription", "tier"],
-      answer: "We offer 4 plans:<br>• <b>Basic</b> - Free (standard rates, tracking, email support)<br>• <b>GOFA Plus</b> - $19.99/mo (lower rates, priority updates, free invoice review)<br>• <b>GOFA Business</b> - $49.99/mo (bulk discounts, priority customs, dedicated support)<br>• <b>Family Island</b> - $29.99/mo (boat drop-off, island delivery, consolidation)<br>See <a href='index.html#membership'>all plans</a>."
+      answer: "We offer 4 plans:<br>• <b>Basic</b> - Free (standard rates, tracking, email support)<br>• <b>GOFA Plus</b> - $19.99/mo (lower rates, priority updates, free invoice review)<br>• <b>GOFA Business</b> - $49.99/mo (bulk discounts, priority customs, dedicated support)<br>• <b>Family Island</b> - $29.99/mo (boat drop-off, island delivery, consolidation)<br>See <a href='/#membership'>all plans</a>."
     },
     {
       keys: ["family island", "island", "boat", "out island", "delivery"],
@@ -35,11 +35,11 @@
     },
     {
       keys: ["account", "sign up", "register", "log in", "login", "create account"],
-      answer: "You can create a free account or log in on our <a href='account.html'>Account page</a>. Signing up gives you a U.S. shipping address, tracking, and faster quotes."
+      answer: "You can create a free account or log in on our <a href='/account/'>Account page</a>. Signing up gives you a U.S. shipping address, tracking, and faster quotes."
     },
     {
       keys: ["how it works", "how do i", "get started", "start", "steps", "ship to"],
-      answer: "It's 4 simple steps:<br>1. Create your free account &amp; get a U.S. address<br>2. Shop and ship to that address, upload your invoice<br>3. We handle customs &amp; give you a fast quote<br>4. Pick up in Nassau or get Family Island delivery<br>More on <a href='index.html#how'>How It Works</a>."
+      answer: "It's 4 simple steps:<br>1. Create your free account &amp; get a U.S. address<br>2. Shop and ship to that address, upload your invoice<br>3. We handle customs &amp; give you a fast quote<br>4. Pick up in Nassau or get Family Island delivery<br>More on <a href='/#how'>How It Works</a>."
     },
     {
       keys: ["hello", "hi", "hey", "good morning", "good afternoon", "yo"],
