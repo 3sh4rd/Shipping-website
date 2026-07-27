@@ -1,4 +1,4 @@
-/* GOFA SHIPPING backend - API server
+/* GOFA SHIPPING backend - API server (PostgreSQL)
  * Endpoints (match the front-end config.js):
  *   Customer:
  *     POST /api/auth/register   { name, email, password }        -> { token, user }
@@ -21,16 +21,13 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { db, seed } = require("./db");
+const { pool, init } = require("./db");
 
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "Gofa";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Raelynn23$";
 const ALLOWED = (process.env.ALLOWED_ORIGINS || "*").split(",").map(s => s.trim());
-
-// Make sure sample data exists on first boot
-seed();
 
 const app = express();
 app.use(express.json());
@@ -42,12 +39,8 @@ app.use(cors({
 }));
 
 // ---- Helpers ----
-function sign(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
-}
-function publicUser(u) {
-  return { id: u.id, name: u.name, email: u.email, plan: u.plan };
-}
+function sign(payload) { return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" }); }
+function publicUser(u) { return { id: u.id, name: u.name, email: u.email, plan: u.plan }; }
 function auth(role) {
   return (req, res, next) => {
     const header = req.headers.authorization || "";
@@ -64,61 +57,70 @@ function auth(role) {
   };
 }
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+// Wrap async handlers so errors return JSON instead of crashing
+const wrap = (fn) => (req, res) => fn(req, res).catch(err => {
+  console.error(err);
+  res.status(500).json({ message: "Server error" });
+});
 
 // ---- Health ----
 app.get("/", (_req, res) => res.json({ ok: true, service: "GOFA Shipping API" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // ================= CUSTOMER AUTH =================
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", wrap(async (req, res) => {
   const { name, email, password } = req.body || {};
   if (!name || !isEmail(email) || !password || String(password).length < 6) {
     return res.status(400).json({ message: "Name, a valid email, and a 6+ char password are required." });
   }
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email.toLowerCase());
-  if (existing) return res.status(409).json({ message: "An account with that email already exists." });
+  const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+  if (existing.rows.length) return res.status(409).json({ message: "An account with that email already exists." });
 
   const hash = bcrypt.hashSync(String(password), 10);
-  const info = db.prepare(
-    "INSERT INTO users (name, email, password_hash, plan) VALUES (?, ?, ?, 'basic')"
-  ).run(name.trim(), email.toLowerCase(), hash);
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
-  const token = sign({ id: user.id, email: user.email, role: "customer" });
-  res.status(201).json({ token, user: publicUser(user) });
-});
+  const { rows } = await pool.query(
+    "INSERT INTO users (name, email, password_hash, plan) VALUES ($1,$2,$3,'basic') RETURNING *",
+    [name.trim(), email.toLowerCase(), hash]
+  );
+  const user = rows[0];
+  res.status(201).json({ token: sign({ id: user.id, email: user.email, role: "customer" }), user: publicUser(user) });
+}));
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", wrap(async (req, res) => {
   const { email, password } = req.body || {};
   if (!isEmail(email) || !password) return res.status(400).json({ message: "Email and password are required." });
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(String(email).toLowerCase());
+  const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [String(email).toLowerCase()]);
+  const user = rows[0];
   if (!user || !bcrypt.compareSync(String(password), user.password_hash)) {
     return res.status(401).json({ message: "Incorrect email or password." });
   }
-  const token = sign({ id: user.id, email: user.email, role: "customer" });
-  res.json({ token, user: publicUser(user) });
-});
+  res.json({ token: sign({ id: user.id, email: user.email, role: "customer" }), user: publicUser(user) });
+}));
 
-app.get("/api/auth/me", auth("customer"), (req, res) => {
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+app.get("/api/auth/me", auth("customer"), wrap(async (req, res) => {
+  const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
+  const user = rows[0];
   if (!user) return res.status(404).json({ message: "User not found" });
-  const shipments = db.prepare(
-    "SELECT tracking_number AS trackingNumber, status, origin, destination, eta FROM shipments WHERE user_id = ? ORDER BY created_at DESC"
-  ).all(user.id);
+  const shipments = (await pool.query(
+    "SELECT tracking_number AS \"trackingNumber\", status, origin, destination, eta FROM shipments WHERE user_id = $1 ORDER BY created_at DESC",
+    [user.id]
+  )).rows;
   res.json({ user: publicUser(user), shipments });
-});
+}));
 
 // ================= TRACKING (public) =================
-app.get("/api/tracking/:id", (req, res) => {
+app.get("/api/tracking/:id", wrap(async (req, res) => {
   const tn = req.params.id;
-  const s = db.prepare(
-    "SELECT tracking_number AS trackingNumber, status, origin, destination, eta FROM shipments WHERE tracking_number = ?"
-  ).get(tn);
-  if (!s) return res.status(404).json({ message: "Tracking number not found." });
-  const events = db.prepare(
-    "SELECT status, location, timestamp, done FROM tracking_events WHERE tracking_number = ? ORDER BY timestamp ASC"
-  ).all(tn).map(e => ({ ...e, done: !!e.done }));
-  res.json({ ...s, events });
-});
+  const { rows } = await pool.query(
+    "SELECT tracking_number AS \"trackingNumber\", status, origin, destination, eta FROM shipments WHERE tracking_number = $1",
+    [tn]
+  );
+  if (!rows.length) return res.status(404).json({ message: "Tracking number not found." });
+  const events = (await pool.query(
+    "SELECT status, location, timestamp, done FROM tracking_events WHERE tracking_number = $1 ORDER BY timestamp ASC",
+    [tn]
+  )).rows;
+  res.json({ ...rows[0], events });
+}));
 
 // ================= ADMIN =================
 app.post("/api/admin/login", (req, res) => {
@@ -129,46 +131,47 @@ app.post("/api/admin/login", (req, res) => {
   res.status(401).json({ message: "Incorrect username or password." });
 });
 
-app.get("/api/admin/orders", auth("admin"), (_req, res) => {
-  res.json(db.prepare("SELECT * FROM orders ORDER BY date DESC").all());
-});
-app.post("/api/admin/orders", auth("admin"), (req, res) => {
+app.get("/api/admin/orders", auth("admin"), wrap(async (_req, res) => {
+  res.json((await pool.query("SELECT * FROM orders ORDER BY date DESC")).rows);
+}));
+app.post("/api/admin/orders", auth("admin"), wrap(async (req, res) => {
   const { id, customer, email, service, date, status, total } = req.body || {};
   if (!id || !customer) return res.status(400).json({ message: "id and customer are required." });
-  db.prepare(
-    "INSERT INTO orders (id, customer, email, service, date, status, total) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, customer, email || null, service || null, date || null, status || "Pending", Number(total) || 0);
-  res.status(201).json(db.prepare("SELECT * FROM orders WHERE id = ?").get(id));
-});
-app.patch("/api/admin/orders/:id", auth("admin"), (req, res) => {
-  const { status } = req.body || {};
-  const result = db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, req.params.id);
-  if (!result.changes) return res.status(404).json({ message: "Order not found." });
-  res.json(db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id));
-});
+  const { rows } = await pool.query(
+    "INSERT INTO orders (id, customer, email, service, date, status, total) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+    [id, customer, email || null, service || null, date || null, status || "Pending", Number(total) || 0]
+  );
+  res.status(201).json(rows[0]);
+}));
+app.patch("/api/admin/orders/:id", auth("admin"), wrap(async (req, res) => {
+  const { rows } = await pool.query("UPDATE orders SET status = $1 WHERE id = $2 RETURNING *", [req.body.status, req.params.id]);
+  if (!rows.length) return res.status(404).json({ message: "Order not found." });
+  res.json(rows[0]);
+}));
 
-app.get("/api/admin/invoices", auth("admin"), (_req, res) => {
-  res.json(db.prepare("SELECT * FROM invoices ORDER BY issued DESC").all());
-});
-app.post("/api/admin/invoices", auth("admin"), (req, res) => {
+app.get("/api/admin/invoices", auth("admin"), wrap(async (_req, res) => {
+  res.json((await pool.query("SELECT * FROM invoices ORDER BY issued DESC")).rows);
+}));
+app.post("/api/admin/invoices", auth("admin"), wrap(async (req, res) => {
   const { id, customer, email, issued, due, status, amount } = req.body || {};
   if (!id || !customer) return res.status(400).json({ message: "id and customer are required." });
-  db.prepare(
-    "INSERT INTO invoices (id, customer, email, issued, due, status, amount) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, customer, email || null, issued || null, due || null, status || "Unpaid", Number(amount) || 0);
-  res.status(201).json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(id));
-});
-app.patch("/api/admin/invoices/:id", auth("admin"), (req, res) => {
-  const { status } = req.body || {};
-  const result = db.prepare("UPDATE invoices SET status = ? WHERE id = ?").run(status, req.params.id);
-  if (!result.changes) return res.status(404).json({ message: "Invoice not found." });
-  res.json(db.prepare("SELECT * FROM invoices WHERE id = ?").get(req.params.id));
-});
+  const { rows } = await pool.query(
+    "INSERT INTO invoices (id, customer, email, issued, due, status, amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *",
+    [id, customer, email || null, issued || null, due || null, status || "Unpaid", Number(amount) || 0]
+  );
+  res.status(201).json(rows[0]);
+}));
+app.patch("/api/admin/invoices/:id", auth("admin"), wrap(async (req, res) => {
+  const { rows } = await pool.query("UPDATE invoices SET status = $1 WHERE id = $2 RETURNING *", [req.body.status, req.params.id]);
+  if (!rows.length) return res.status(404).json({ message: "Invoice not found." });
+  res.json(rows[0]);
+}));
 
-app.get("/api/admin/customers", auth("admin"), (_req, res) => {
-  res.json(db.prepare("SELECT id, name, email, plan, created_at FROM users ORDER BY created_at DESC").all());
-});
+app.get("/api/admin/customers", auth("admin"), wrap(async (_req, res) => {
+  res.json((await pool.query("SELECT id, name, email, plan, created_at FROM users ORDER BY created_at DESC")).rows);
+}));
 
-app.listen(PORT, () => {
-  console.log(`GOFA Shipping API running on http://localhost:${PORT}`);
-});
+// ---- Start (after DB is ready) ----
+init()
+  .then(() => app.listen(PORT, () => console.log(`GOFA Shipping API running on http://localhost:${PORT}`)))
+  .catch(err => { console.error("Failed to initialize database:", err); process.exit(1); });

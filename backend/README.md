@@ -8,7 +8,17 @@ A small Node.js + Express + SQLite server that powers customer accounts, package
 - **Tracking** - look up a package's status and event history by tracking number.
 - **Admin** - sign in as admin and view/manage orders and invoices.
 
-Data is stored in a single SQLite file (`gofa.db`) that is created automatically on first run and seeded with sample data.
+Data is stored in a **PostgreSQL** database (via the `DATABASE_URL` connection string). Tables are created automatically on first run and seeded with sample data. Postgres keeps your data permanently, even across restarts and redeploys.
+
+---
+
+## Get a free database (Neon)
+
+1. Go to [neon.tech](https://neon.tech) and sign up (free, no card).
+2. Create a project. Copy the **connection string** (starts with `postgresql://...` and ends with `?sslmode=require`).
+3. Use it as `DATABASE_URL` locally and on Render.
+
+Supabase (supabase.com) works too - use its "Connection string / URI".
 
 ---
 
@@ -18,14 +28,14 @@ You need [Node.js](https://nodejs.org) 18 or newer.
 
 ```bash
 cd backend
-cp .env.example .env        # then open .env and set JWT_SECRET (and keep your admin password)
+cp .env.example .env        # then set DATABASE_URL and JWT_SECRET
 npm install
 npm start
 ```
 
 The API starts at `http://localhost:4000`.
 
-On first start it creates `gofa.db` and seeds sample customers, orders, and invoices.
+On first start it creates the tables and seeds sample customers, orders, and invoices.
 
 **Demo customer login:** `maria@example.com` / `password123`
 **Admin login:** `Gofa` / `Raelynn23$` (change these in `.env`).
@@ -60,10 +70,10 @@ The account page, tracking page, and admin dashboard will then use live data. Al
    - **Root Directory:** `backend`
    - **Build Command:** `npm install`
    - **Start Command:** `npm start`
-4. Add Environment Variables (from your `.env`): `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ALLOWED_ORIGINS` (set this to your live site URL, e.g. `https://3sh4rd.github.io`).
+4. Add Environment Variables: `DATABASE_URL` (your Neon connection string), `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ALLOWED_ORIGINS` (set this to your live site URL, e.g. `https://gofashipping.com`).
 5. Deploy. Render gives you a URL like `https://gofa-shipping-api.onrender.com` - put that in `config.js` as `apiBaseUrl`.
 
-> Note: On Render's free tier the SQLite file lives on the instance's disk and resets when the service restarts/redeploys. That's fine for testing. For permanent data, add a Render **Persistent Disk** (mount it and set `DB_PATH` to a path on that disk), or switch to a hosted Postgres database later.
+> Data lives in your Neon Postgres database, so it persists permanently across restarts and redeploys - nothing is lost. (The free web instance still "sleeps" when idle, so the first request after a nap takes ~50 seconds to wake.)
 
 ---
 
