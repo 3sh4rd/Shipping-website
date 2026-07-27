@@ -7,7 +7,7 @@
   const KB = [
     {
       keys: ["rate", "price", "cost", "how much", "fee", "charge", "quote"],
-      answer: "Our shipping rates start at:<br>• Ocean freight - <b>$7.50</b> / cu ft (consolidated)<br>• Air freight - <b>$4.25</b> / lb (2–3 days)<br>• Package consolidation - <b>$5.00</b><br>Customs duty &amp; VAT are calculated at checkout. Want a personalized quote? Visit our <a href='/contact/'>Contact page</a>."
+      answer: "Our shipping rates start at:<br>• Ocean freight - <b>$7.50</b> / cu ft (consolidated)<br>• Air freight - <b>to be determined</b> (2–3 days)<br>Customs duty &amp; VAT are calculated at checkout. Want a personalized quote? Visit our <a href='/contact/'>Contact page</a>."
     },
     {
       keys: ["track", "where is", "package status", "tracking number", "parcel"],
