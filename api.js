@@ -60,6 +60,7 @@
     login: (payload) => request(ep.login || "/api/auth/login", { method: "POST", body: payload }),
     me: () => request(ep.me || "/api/auth/me"),
     track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber)),
+    adminLogin: (payload) => request(ep.adminLogin || "/api/admin/login", { method: "POST", body: payload }),
     adminOrders: () => request(ep.adminOrders || "/api/admin/orders"),
     adminInvoices: () => request(ep.adminInvoices || "/api/admin/invoices")
   };

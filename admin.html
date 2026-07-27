@@ -145,6 +145,23 @@
       loginAlert.hidden = true;
       const u = $('#adminUser').value.trim();
       const p = $('#adminPass').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+
+      // If the backend is connected, authenticate against it (secure, authoritative).
+      if (GofaAPI.isConfigured()) {
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Signing in…';
+        try {
+          const { token } = await GofaAPI.adminLogin({ username: u, password: p });
+          GofaAPI.setToken(token);
+          sessionStorage.setItem(SESSION_KEY, '1');
+          enterDashboard();
+        } catch (err) {
+          showLoginError(err.code === 'NETWORK_ERROR' ? err.message : 'Incorrect username or password.');
+        } finally { btn.disabled = false; btn.textContent = orig; }
+        return;
+      }
+
+      // Offline fallback (no backend yet): client-side hashed gate. Not secure.
       const admin = CFG.admin || {};
       const hash = await sha256(p);
       if (u === admin.username && hash === admin.passwordHash) {
@@ -157,6 +174,7 @@
 
     $('#logoutBtn').addEventListener('click', () => {
       sessionStorage.removeItem(SESSION_KEY);
+      if (window.GofaAPI) GofaAPI.logout();
       location.reload();
     });
 
