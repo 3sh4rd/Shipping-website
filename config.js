@@ -7,7 +7,7 @@
  * ------------------------------------------------------------------ */
 window.GOFA_CONFIG = {
   // Base URL of your API (no trailing slash). Leave "" until you have one.
-  apiBaseUrl: "",
+  apiBaseUrl: "https://gofa-shipping-api.onrender.com",
 
   // ---- Contact / quote form (Web3Forms - free, 250 submissions/mo) ----
   // 1. Go to https://web3forms.com and enter gofabahamas@gmail.com to get
