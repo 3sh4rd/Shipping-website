@@ -642,6 +642,21 @@ img, svg { display: block; max-width: 100%; }
 .muted { color: var(--muted); }
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
 .dash-empty { color: var(--muted); padding: 30px; text-align: center; background: var(--paper); border-radius: 14px; grid-column: 1 / -1; }
+.dash-sec { color: var(--navy-900); margin: 26px 0 12px; font-size: 1.15rem; }
+.ship-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
+.ship-card strong { color: var(--navy-900); font-family: var(--font-head); }
+
+/* Plan badges + member perks panel */
+.plan-badge { display: inline-block; margin-top: 8px; padding: 4px 14px; border-radius: 999px; font-family: var(--font-head); font-weight: 700; font-size: .78rem; background: rgba(95,107,133,.15); color: var(--slate); }
+.plan-badge.plan-plus { background: rgba(47,127,228,.15); color: var(--blue); }
+.plan-badge.plan-business { background: rgba(224,160,21,.18); color: var(--gold-600); }
+.plan-badge.plan-family { background: rgba(56,168,107,.15); color: #1f7a4d; }
+.plan-badge.sm { margin: 0 0 0 6px; padding: 2px 9px; font-size: .68rem; vertical-align: middle; }
+.perks-panel { background: linear-gradient(165deg, var(--navy-800), var(--navy-900)); color: #fff; border-radius: 16px; padding: 22px 26px; margin-bottom: 8px; }
+.perks-panel h3 { color: var(--gold-400); margin-bottom: 12px; }
+.perks-panel ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 20px; }
+.perks-panel li { position: relative; padding-left: 24px; color: rgba(255,255,255,.9); font-size: .93rem; }
+.perks-panel li::before { content: "✓"; position: absolute; left: 0; color: var(--gold-400); font-weight: 800; }
 
 /* ============================================================
    TRACKING PAGE

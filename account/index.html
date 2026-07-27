@@ -132,12 +132,35 @@
           <div>
             <h2 id="dashHello">Welcome back</h2>
             <p id="dashEmail" class="muted"></p>
+            <span class="plan-badge" id="planBadge" hidden></span>
           </div>
-          <button class="btn btn-outline-light" id="logoutBtn">Log Out</button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-gold" id="statementBtn" hidden>⬇ Download Statement</button>
+            <button class="btn btn-outline-light" id="logoutBtn">Log Out</button>
+          </div>
         </div>
-        <div class="dash-grid" id="dashShipments">
-          <!-- shipments injected from backend -->
+
+        <div class="perks-panel" id="perksPanel" hidden>
+          <h3>Your plan benefits</h3>
+          <ul id="perksList"></ul>
         </div>
+
+        <h3 class="dash-sec">Your shipments</h3>
+        <div class="dash-grid" id="dashShipments"></div>
+
+        <h3 class="dash-sec">Your orders</h3>
+        <div class="admin-panel"><div class="admin-table-wrap">
+          <table class="admin-table"><thead>
+            <tr><th>Order #</th><th>Service</th><th>Date</th><th>Status</th><th class="ta-right">Total</th></tr>
+          </thead><tbody id="ordersBody"></tbody></table>
+        </div></div>
+
+        <h3 class="dash-sec">Your invoices</h3>
+        <div class="admin-panel"><div class="admin-table-wrap">
+          <table class="admin-table"><thead>
+            <tr><th>Invoice #</th><th>Issued</th><th>Due</th><th>Status</th><th class="ta-right">Amount</th></tr>
+          </thead><tbody id="invBody"></tbody></table>
+        </div></div>
       </div>
 
     </div>
@@ -178,6 +201,8 @@
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="/config.js"></script>
   <script src="/api.js"></script>
   <script src="/chatbot.js"></script>
@@ -228,7 +253,7 @@
           password: $('#loginPassword').value
         });
         if (data && data.token) GofaAPI.setToken(data.token);
-        renderDashboard(data && data.user);
+        await loadDashboardData();
       } catch (err) { handleError(err); }
     });
 
@@ -242,17 +267,93 @@
           password: $('#regPassword').value
         });
         if (data && data.token) GofaAPI.setToken(data.token);
-        renderDashboard(data && data.user);
+        await loadDashboardData();
       } catch (err) { handleError(err); }
     });
 
-    function renderDashboard(user) {
+    const PLAN_LABEL = { basic: 'Basic Member', plus: 'GOFA Plus', business: 'GOFA Business', family: 'Family Island Plan' };
+    const PERKS = {
+      basic: ['Standard shipping rates', 'Package tracking', 'Email support'],
+      plus: ['10% member discount on AI quotes', 'Lower shipping rates', 'Priority updates', 'Free invoice review', 'Exclusive member deals'],
+      business: ['10% member discount on AI quotes', 'Bulk shipping discounts', 'Priority customs processing', 'Monthly statements', 'Dedicated support'],
+      family: ['10% member discount on AI quotes', 'Boat drop-off service', 'Island delivery coordination', 'Package consolidation', 'Regular updates']
+    };
+    const money = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    let currentUser = null, activity = { orders: [], invoices: [] };
+
+    function renderHeader(user) {
+      currentUser = user || {};
       $('#authWrap').hidden = true;
-      const dash = $('#dashboard');
-      dash.hidden = false;
+      $('#dashboard').hidden = false;
       $('#dashHello').textContent = 'Welcome back' + (user && user.name ? ', ' + user.name.split(' ')[0] : '');
       $('#dashEmail').textContent = user && user.email ? user.email : '';
+      const plan = (user && user.plan || 'basic').toLowerCase();
+      const badge = $('#planBadge');
+      badge.hidden = false;
+      badge.textContent = PLAN_LABEL[plan] || 'Member';
+      badge.className = 'plan-badge plan-' + plan;
+      $('#perksList').innerHTML = (PERKS[plan] || PERKS.basic).map(p => `<li>${esc(p)}</li>`).join('');
+      $('#perksPanel').hidden = false;
+      $('#statementBtn').hidden = false;
     }
+
+    async function loadDashboardData() {
+      try {
+        const me = await GofaAPI.me();
+        renderHeader(me && me.user);
+        const shipments = (me && me.shipments) || [];
+        $('#dashShipments').innerHTML = shipments.length
+          ? shipments.map(s => `<div class="ship-card"><small class="muted">${esc(s.trackingNumber)}</small><strong>${esc(s.status)}</strong><span class="muted">${esc(s.origin || '')} → ${esc(s.destination || '')}</span></div>`).join('')
+          : '<div class="dash-empty">No shipments yet.</div>';
+      } catch (err) { handleError(err); return; }
+      try {
+        activity = await GofaAPI.activity();
+        const orders = activity.orders || [], invoices = activity.invoices || [];
+        $('#ordersBody').innerHTML = orders.length
+          ? orders.map(o => `<tr><td class="mono">${esc(o.id)}</td><td>${esc(o.service || '')}</td><td>${esc(o.date || '')}</td><td>${esc(o.status || '')}</td><td class="ta-right">${money(o.total)}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="admin-empty">No orders yet.</td></tr>';
+        $('#invBody').innerHTML = invoices.length
+          ? invoices.map(i => `<tr><td class="mono">${esc(i.id)}</td><td>${esc(i.issued || '')}</td><td>${esc(i.due || '')}</td><td>${esc(i.status || '')}</td><td class="ta-right">${money(i.amount)}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="admin-empty">No invoices yet.</td></tr>';
+      } catch (_) {}
+    }
+
+    // ---- Download statement PDF ----
+    $('#statementBtn').addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.text('GOFA SHIPPING', 14, 20);
+      doc.setFontSize(13); doc.text('Account Statement', 196, 20, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+      doc.text(`${currentUser.name || ''}`, 14, 30);
+      doc.text(`${currentUser.email || ''}`, 14, 35);
+      doc.text(`Plan: ${PLAN_LABEL[(currentUser.plan||'basic').toLowerCase()] || 'Member'}`, 14, 40);
+      doc.text(today, 196, 30, { align: 'right' });
+
+      const orders = activity.orders || [], invoices = activity.invoices || [];
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text('Orders', 14, 52);
+      doc.autoTable({ startY: 56, head: [['Order #', 'Service', 'Date', 'Status', 'Total']],
+        body: orders.map(o => [o.id, o.service || '', o.date || '', o.status || '', money(o.total)]),
+        theme: 'striped', headStyles: { fillColor: [10, 26, 60] }, styles: { fontSize: 9 } });
+      let y = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 60) + 10;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text('Invoices', 14, y);
+      doc.autoTable({ startY: y + 4, head: [['Invoice #', 'Issued', 'Due', 'Status', 'Amount']],
+        body: invoices.map(i => [i.id, i.issued || '', i.due || '', i.status || '', money(i.amount)]),
+        theme: 'striped', headStyles: { fillColor: [10, 26, 60] }, styles: { fontSize: 9 } });
+      const ordTotal = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const invOutstanding = invoices.filter(i => !/paid/i.test(i.status || '')).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      y = doc.lastAutoTable.finalY + 12;
+      doc.setFontSize(10);
+      doc.text('Orders total:', 150, y, { align: 'right' }); doc.text(money(ordTotal), 196, y, { align: 'right' }); y += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Outstanding invoices:', 150, y, { align: 'right' }); doc.text(money(invOutstanding), 196, y, { align: 'right' });
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(120);
+      doc.text('GOFA Shipping - Nassau, The Bahamas - (242) 427-5699', 14, 285);
+      doc.save('GOFA-statement.pdf');
+    });
 
     $('#logoutBtn').addEventListener('click', () => {
       GofaAPI.logout();
@@ -260,17 +361,10 @@
       $('#authWrap').hidden = false;
     });
 
-    // If a token exists and backend is configured, try to restore session
+    // If a token exists and backend is configured, restore session
     (async function init() {
       if (GofaAPI.isConfigured() && GofaAPI.getToken()) {
-        try {
-          const data = await GofaAPI.me();
-          renderDashboard(data && data.user);
-          const grid = $('#dashShipments');
-          const shipments = (data && data.shipments) || [];
-          grid.innerHTML = shipments.length ? '' :
-            '<div class="dash-empty">No shipments yet. Once you ship, they\'ll appear here.</div>';
-        } catch (_) { /* stay on login */ }
+        try { await loadDashboardData(); } catch (_) {}
       }
     })();
   </script>

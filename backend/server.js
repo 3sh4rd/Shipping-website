@@ -116,6 +116,14 @@ app.get("/api/auth/me", auth("customer"), wrap(async (req, res) => {
   res.json({ user: publicUser(user), shipments });
 }));
 
+// Customer's own orders + invoices (matched by their account email) - powers statements
+app.get("/api/auth/activity", auth("customer"), wrap(async (req, res) => {
+  const email = String(req.user.email || "").toLowerCase();
+  const orders = (await pool.query("SELECT * FROM orders WHERE lower(email) = $1 ORDER BY date DESC", [email])).rows;
+  const invoices = (await pool.query("SELECT * FROM invoices WHERE lower(email) = $1 ORDER BY issued DESC", [email])).rows;
+  res.json({ orders, invoices });
+}));
+
 // ================= TRACKING (public) =================
 app.get("/api/tracking/:id", wrap(async (req, res) => {
   const tn = req.params.id;
@@ -217,7 +225,10 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 app.get("/api/admin/orders", auth("admin"), wrap(async (_req, res) => {
-  res.json((await pool.query("SELECT * FROM orders ORDER BY date DESC")).rows);
+  // Include the customer's membership plan (if they have an account) so staff can prioritize
+  res.json((await pool.query(
+    "SELECT o.*, u.plan AS customer_plan FROM orders o LEFT JOIN users u ON lower(u.email) = lower(o.email) ORDER BY o.date DESC"
+  )).rows);
 }));
 app.post("/api/admin/orders", auth("admin"), wrap(async (req, res) => {
   const { id, customer, email, service, date, status, total } = req.body || {};

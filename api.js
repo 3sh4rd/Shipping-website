@@ -59,6 +59,7 @@
     register: (payload) => request(ep.register || "/api/auth/register", { method: "POST", body: payload }),
     login: (payload) => request(ep.login || "/api/auth/login", { method: "POST", body: payload }),
     me: () => request(ep.me || "/api/auth/me"),
+    activity: () => request(ep.activity || "/api/auth/activity"),
     track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber)),
     getQuote: (payload) => request(ep.quote || "/api/quote", { method: "POST", body: payload }),
     adminLogin: (payload) => request(ep.adminLogin || "/api/admin/login", { method: "POST", body: payload }),

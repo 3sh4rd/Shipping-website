@@ -162,6 +162,12 @@
       else if (/(overdue|cancel|failed|hold)/.test(s)) cls = 'bad';
       return `<span class="status-badge ${cls}">${esc(status || '-')}</span>`;
     }
+    function planTag(plan) {
+      const p = String(plan || '').toLowerCase();
+      if (!p || p === 'basic') return '';
+      const label = p === 'business' ? '★ Priority' : p === 'plus' ? 'Plus' : p === 'family' ? 'Family' : esc(p);
+      return ` <span class="plan-badge plan-${esc(p)} sm">${label}</span>`;
+    }
 
     // ---- Auth ----
     const loginWrap = $('#loginWrap');
@@ -234,7 +240,7 @@
       $('#ordersBody').innerHTML = rows.length ? rows.map(o => `
         <tr>
           <td class="mono">${esc(o.id)}</td>
-          <td>${esc(o.customer)}</td>
+          <td>${esc(o.customer)}${planTag(o.customer_plan)}</td>
           <td>${esc(o.service)}</td>
           <td>${esc(o.date)}</td>
           <td>${badge(o.status)}</td>
