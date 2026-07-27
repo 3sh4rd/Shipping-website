@@ -59,6 +59,8 @@
     register: (payload) => request(ep.register || "/api/auth/register", { method: "POST", body: payload }),
     login: (payload) => request(ep.login || "/api/auth/login", { method: "POST", body: payload }),
     me: () => request(ep.me || "/api/auth/me"),
-    track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber))
+    track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber)),
+    adminOrders: () => request(ep.adminOrders || "/api/admin/orders"),
+    adminInvoices: () => request(ep.adminInvoices || "/api/admin/invoices")
   };
 })();

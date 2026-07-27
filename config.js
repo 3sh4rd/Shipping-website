@@ -26,6 +26,20 @@ window.GOFA_CONFIG = {
     register: "/api/auth/register",
     login: "/api/auth/login",
     me: "/api/auth/me",
-    tracking: "/api/tracking/"
+    tracking: "/api/tracking/",
+    adminOrders: "/api/admin/orders",
+    adminInvoices: "/api/admin/invoices"
+  },
+
+  // ---- Admin dashboard sign-in ----
+  // NOTE: This is a front-end convenience gate only. A static site cannot
+  // truly secure a password. The username is public and the password is
+  // stored as a SHA-256 hash (not plain text) so it is not directly
+  // readable, but a determined user could still bypass it. For real
+  // security, move authentication to your backend.
+  admin: {
+    username: "Gofa",
+    // SHA-256 hash of the admin password
+    passwordHash: "3ccf707068385368ec819181fd8b35f72ea3fdfb7a036396cd0d1a782e88d5c2"
   }
 };

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin Dashboard - GOFA SHIPPING</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-body">
+
+  <!-- Admin top bar -->
+  <header class="admin-topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-main">GOFA</span>
+      <span class="logo-sub">ADMIN</span>
+    </a>
+    <div class="admin-topbar-right">
+      <span id="adminWho" class="admin-who" hidden></span>
+      <button id="logoutBtn" class="btn btn-outline-light" hidden>Log Out</button>
+    </div>
+  </header>
+
+  <!-- Login gate -->
+  <main class="admin-login-wrap" id="loginWrap">
+    <form class="admin-login-card" id="adminLoginForm">
+      <div class="admin-lock">🔒</div>
+      <h1>Admin Sign In</h1>
+      <p>Restricted area - staff only.</p>
+      <div class="admin-alert" id="loginAlert" hidden></div>
+      <div class="field">
+        <label for="adminUser">Username</label>
+        <input type="text" id="adminUser" autocomplete="username" placeholder="Username" required />
+      </div>
+      <div class="field">
+        <label for="adminPass">Password</label>
+        <input type="password" id="adminPass" autocomplete="current-password" placeholder="Password" required />
+      </div>
+      <button type="submit" class="btn btn-gold btn-block">Sign In</button>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <main class="admin-dash" id="adminDash" hidden>
+    <div class="admin-container">
+
+      <div class="admin-head">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="muted">Orders &amp; invoices overview</p>
+        </div>
+        <button class="btn btn-navy" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="admin-cards" id="adminCards">
+        <div class="admin-card"><span class="ac-label">Total Orders</span><b id="statOrders">-</b></div>
+        <div class="admin-card"><span class="ac-label">Pending Orders</span><b id="statPending">-</b></div>
+        <div class="admin-card"><span class="ac-label">Revenue</span><b id="statRevenue">-</b></div>
+        <div class="admin-card"><span class="ac-label">Outstanding Invoices</span><b id="statOutstanding">-</b></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="orders">Orders</button>
+        <button class="admin-tab" data-tab="invoices">Invoices</button>
+        <input type="search" id="adminSearch" class="admin-search" placeholder="Search…" />
+      </div>
+
+      <!-- Orders table -->
+      <div class="admin-panel" id="ordersPanel">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Order #</th><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th class="ta-right">Total</th></tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Invoices table -->
+      <div class="admin-panel" id="invoicesPanel" hidden>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Invoice #</th><th>Customer</th><th>Issued</th><th>Due</th><th>Status</th><th class="ta-right">Amount</th></tr>
+            </thead>
+            <tbody id="invoicesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script>
+    const CFG = window.GOFA_CONFIG || {};
+    const $ = (s) => document.querySelector(s);
+    const SESSION_KEY = 'gofa_admin_ok';
+
+    // ---- SHA-256 helper ----
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function money(n) {
+      const v = Number(n);
+      return isNaN(v) ? esc(n) : v.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    }
+    function badge(status) {
+      const s = String(status || '').toLowerCase();
+      let cls = 'neutral';
+      if (/(paid|delivered|complete|completed)/.test(s)) cls = 'good';
+      else if (/(pending|processing|in transit|transit|awaiting)/.test(s)) cls = 'warn';
+      else if (/(overdue|cancel|failed|hold)/.test(s)) cls = 'bad';
+      return `<span class="status-badge ${cls}">${esc(status || '-')}</span>`;
+    }
+
+    // ---- Auth ----
+    const loginWrap = $('#loginWrap');
+    const dash = $('#adminDash');
+    const loginAlert = $('#loginAlert');
+
+    function showLoginError(msg) { loginAlert.hidden = false; loginAlert.textContent = msg; }
+
+    function enterDashboard() {
+      loginWrap.hidden = true;
+      dash.hidden = false;
+      $('#logoutBtn').hidden = false;
+      $('#adminWho').hidden = false;
+      $('#adminWho').textContent = 'Signed in as ' + (CFG.admin ? CFG.admin.username : 'admin');
+      loadData();
+    }
+
+    $('#adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginAlert.hidden = true;
+      const u = $('#adminUser').value.trim();
+      const p = $('#adminPass').value;
+      const admin = CFG.admin || {};
+      const hash = await sha256(p);
+      if (u === admin.username && hash === admin.passwordHash) {
+        sessionStorage.setItem(SESSION_KEY, '1');
+        enterDashboard();
+      } else {
+        showLoginError('Incorrect username or password.');
+      }
+    });
+
+    $('#logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem(SESSION_KEY);
+      location.reload();
+    });
+
+    // ---- Data loading ----
+    let ordersData = [], invoicesData = [];
+
+    function notConfiguredRow(cols, endpoint) {
+      return `<tr><td colspan="${cols}" class="admin-empty">
+        <b>Backend not connected yet.</b> Set <code>apiBaseUrl</code> in <code>config.js</code>, then this table pulls live data from
+        <code>GET {apiBaseUrl}${esc(endpoint)}</code> (send the admin token as a Bearer header).
+      </td></tr>`;
+    }
+    function emptyRow(cols, msg) { return `<tr><td colspan="${cols}" class="admin-empty">${esc(msg)}</td></tr>`; }
+
+    function renderOrders(list) {
+      const q = $('#adminSearch').value.trim().toLowerCase();
+      const rows = list.filter(o => !q || JSON.stringify(o).toLowerCase().includes(q));
+      $('#ordersBody').innerHTML = rows.length ? rows.map(o => `
+        <tr>
+          <td class="mono">${esc(o.id)}</td>
+          <td>${esc(o.customer)}</td>
+          <td>${esc(o.service)}</td>
+          <td>${esc(o.date)}</td>
+          <td>${badge(o.status)}</td>
+          <td class="ta-right">${money(o.total)}</td>
+        </tr>`).join('') : emptyRow(6, q ? 'No matching orders.' : 'No orders yet.');
+    }
+
+    function renderInvoices(list) {
+      const q = $('#adminSearch').value.trim().toLowerCase();
+      const rows = list.filter(i => !q || JSON.stringify(i).toLowerCase().includes(q));
+      $('#invoicesBody').innerHTML = rows.length ? rows.map(i => `
+        <tr>
+          <td class="mono">${esc(i.id)}</td>
+          <td>${esc(i.customer)}</td>
+          <td>${esc(i.issued)}</td>
+          <td>${esc(i.due)}</td>
+          <td>${badge(i.status)}</td>
+          <td class="ta-right">${money(i.amount)}</td>
+        </tr>`).join('') : emptyRow(6, q ? 'No matching invoices.' : 'No invoices yet.');
+    }
+
+    function renderSummary() {
+      $('#statOrders').textContent = ordersData.length || '0';
+      $('#statPending').textContent = ordersData.filter(o => /pending|processing|transit/i.test(o.status || '')).length || '0';
+      const revenue = ordersData.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      $('#statRevenue').textContent = money(revenue);
+      const outstanding = invoicesData.filter(i => !/paid/i.test(i.status || '')).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      $('#statOutstanding').textContent = money(outstanding);
+    }
+
+    async function loadData() {
+      // Orders
+      try {
+        const data = await GofaAPI.adminOrders();
+        ordersData = Array.isArray(data) ? data : (data && data.orders) || [];
+        renderOrders(ordersData);
+      } catch (err) {
+        ordersData = [];
+        $('#ordersBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
+          ? notConfiguredRow(6, CFG.endpoints.adminOrders)
+          : emptyRow(6, 'Could not load orders: ' + (err.message || 'error'));
+      }
+      // Invoices
+      try {
+        const data = await GofaAPI.adminInvoices();
+        invoicesData = Array.isArray(data) ? data : (data && data.invoices) || [];
+        renderInvoices(invoicesData);
+      } catch (err) {
+        invoicesData = [];
+        $('#invoicesBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
+          ? notConfiguredRow(6, CFG.endpoints.adminInvoices)
+          : emptyRow(6, 'Could not load invoices: ' + (err.message || 'error'));
+      }
+      renderSummary();
+    }
+
+    // ---- Tabs + search + refresh ----
+    document.querySelectorAll('.admin-tab').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const tab = t.dataset.tab;
+      $('#ordersPanel').hidden = tab !== 'orders';
+      $('#invoicesPanel').hidden = tab !== 'invoices';
+    }));
+    $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); });
+    $('#refreshBtn').addEventListener('click', loadData);
+
+    // ---- Restore session ----
+    if (sessionStorage.getItem(SESSION_KEY) === '1') enterDashboard();
+  </script>
+</body>
+</html>
