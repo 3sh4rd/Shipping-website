@@ -170,3 +170,28 @@
     build();
   }
 })();
+
+/* GOFA SHIPPING - navy shine sweep on scroll
+ * Adds a diagonal light sweep across navy sections each time they scroll into view.
+ */
+(function () {
+  function setup() {
+    const els = document.querySelectorAll(".membership, .cta-band, .site-footer, .contact-hero, .account-hero, .track-hero, .trust");
+    els.forEach(e => e.classList.add("nav-shine"));
+    if (!("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(ent => {
+        if (ent.isIntersecting) {
+          ent.target.classList.add("shine-go");
+          setTimeout(() => ent.target.classList.remove("shine-go"), 1200);
+        }
+      });
+    }, { threshold: 0.35 });
+    els.forEach(e => io.observe(e));
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setup);
+  } else {
+    setup();
+  }
+})();
