@@ -719,3 +719,34 @@ img, svg { display: block; max-width: 100%; }
   .track-search { flex-direction: column; }
   .track-route { gap: 16px; }
 }
+
+/* ============================================================
+   AI QUOTE PAGE
+   ============================================================ */
+.quote-wrap { max-width: 640px; margin: 0 auto; }
+.dropzone { border: 2px dashed #cdd6e6; border-radius: 18px; padding: 42px 24px; text-align: center; background: var(--paper); cursor: pointer; transition: border-color .2s ease, background .2s ease; }
+.dropzone.drag { border-color: var(--gold-500); background: #fff9ec; }
+.dz-icon { font-size: 2.4rem; margin-bottom: 8px; }
+.dropzone p { color: var(--slate); }
+.dropzone small { color: var(--muted); display: block; margin-top: 8px; }
+.linklike { background: none; border: none; color: var(--gold-600); font-weight: 700; cursor: pointer; font-size: 1rem; padding: 0; text-decoration: underline; }
+#previewImg { max-height: 220px; border-radius: 12px; margin: 0 auto 10px; box-shadow: var(--shadow-sm); }
+
+.quote-state { max-width: 640px; margin: 0 auto; text-align: center; background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 48px 24px; box-shadow: var(--shadow-sm); }
+.quote-state.error { background: #fdf2f2; border-color: #f5c2c2; }
+.quote-state h3 { color: var(--navy-900); margin-bottom: 6px; }
+.spinner { width: 46px; height: 46px; border-radius: 50%; border: 4px solid var(--line); border-top-color: var(--gold-500); animation: spin 1s linear infinite; margin: 0 auto 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.result-head h3 { color: var(--navy-900); }
+.quote-table .q-in { width: 74px; padding: 7px 8px; border: 1.5px solid var(--line); border-radius: 8px; font-family: var(--font-body); font-size: .9rem; }
+.quote-table .q-qty { width: 54px; text-align: center; }
+.quote-table td { vertical-align: middle; }
+
+.quote-summary { max-width: 430px; margin: 22px 0 0 auto; background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; box-shadow: var(--shadow-sm); }
+.qs-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; color: var(--slate); font-size: .95rem; }
+.qs-row b { font-family: var(--font-head); color: var(--navy-900); }
+.qs-row #levyInput { width: 92px; margin-left: 8px; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 8px; font-family: var(--font-body); }
+.qs-row.total { border-top: 2px solid var(--line); margin-top: 6px; padding-top: 12px; font-size: 1.05rem; }
+.qs-row.total b { color: var(--gold-600); font-size: 1.25rem; }

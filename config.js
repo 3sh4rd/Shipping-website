@@ -27,6 +27,7 @@ window.GOFA_CONFIG = {
     login: "/api/auth/login",
     me: "/api/auth/me",
     tracking: "/api/tracking/",
+    quote: "/api/quote",
     adminLogin: "/api/admin/login",
     adminOrders: "/api/admin/orders",
     adminInvoices: "/api/admin/invoices"

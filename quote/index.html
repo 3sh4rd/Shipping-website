@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <title>Get an AI Quote - GOFA SHIPPING</title>
+  <meta name="description" content="Upload your U.S. invoice and GOFA's AI reads it, classifies each item, and estimates Bahamas customs duty, VAT and fees - with a downloadable report." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <!-- Top info bar -->
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <div class="tagline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="color:var(--gold-400)"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        Your Gateway From the U.S. to <b>Any Island</b>
+      </div>
+      <div class="tb-right">
+        <a class="tb-item" href="tel:+12424275699"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2Z"/></svg>(242) 427-5699</a>
+        <a class="tb-item" href="mailto:info@gofashipping.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7L22 6"/></svg>info@gofashipping.com</a>
+        <span class="tb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Nassau, The Bahamas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container nav">
+      <a href="/" class="logo">
+        <span class="logo-main">GOFA</span>
+        <span class="logo-sub">SHIPPING</span>
+        <svg class="swoosh" viewBox="0 0 78 8"><path d="M2 6 C24 1 54 1 76 3" fill="none" stroke="#f5b421" stroke-width="4" stroke-linecap="round"/></svg>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="/">Home</a>
+        <a href="/#how">How It Works</a>
+        <a href="/#rates">Rates</a>
+        <a href="/#membership">Memberships</a>
+        <a href="/quote/" class="active">Get a Quote</a>
+        <a href="/tracking/">Track Package</a>
+        <a href="/contact/">Contact Us</a>
+      </nav>
+      <div class="nav-auth">
+        <a href="/account/" class="btn btn-ghost"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login</a>
+        <a href="/account/" class="btn btn-gold"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Sign Up</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <!-- Quote hero -->
+  <section class="section" style="padding-bottom:30px;">
+    <div class="container">
+      <div class="section-head" style="margin-bottom:26px;">
+        <span class="kicker">AI Quotes</span>
+        <h2>Get an instant quote from your <span style="color:var(--gold-600)">invoice</span></h2>
+        <p>Upload a photo, screenshot, or PDF of your U.S. store receipt - our AI reads it and estimates Bahamas customs duty, VAT and fees per item.</p>
+      </div>
+
+      <!-- Uploader -->
+      <div class="quote-wrap" id="quoteUpload">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept="image/*,.pdf" hidden />
+          <div id="dropIdle">
+            <div class="dz-icon">📄</div>
+            <p><b>Drag &amp; drop</b> your invoice here, or <button type="button" class="linklike" id="browseBtn">browse</button></p>
+            <small>JPG, PNG, or PDF · your file is only used to generate this quote</small>
+          </div>
+          <div id="dropPreview" hidden>
+            <img id="previewImg" alt="Invoice preview" />
+            <p id="fileName" class="muted"></p>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-block" id="scanBtn" disabled style="margin-top:18px;">Get Quote with AI</button>
+        <p class="form-note" style="text-align:center;">Prices are AI estimates - you can adjust any duty rate before downloading.</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="quote-state" id="quoteLoading" hidden>
+        <div class="spinner"></div>
+        <h3>Reading your invoice…</h3>
+        <p class="muted">Classifying items and calculating customs. This can take a few seconds.</p>
+      </div>
+
+      <!-- Error -->
+      <div class="quote-state error" id="quoteError" hidden>
+        <h3 id="errTitle">Couldn't read that invoice</h3>
+        <p class="muted" id="errMsg">We had trouble reading that file. Try a clearer photo of the invoice.</p>
+        <button class="btn btn-navy" id="tryAgainBtn">Try Again</button>
+      </div>
+
+      <!-- Results -->
+      <div id="quoteResult" hidden>
+        <div class="result-head">
+          <div>
+            <h3>Your customs estimate</h3>
+            <p class="muted" style="font-size:.9rem;">Review results - AI can make mistakes. Adjust duty rates if needed.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-navy" id="newQuoteBtn">↺ New</button>
+            <button class="btn btn-gold" id="downloadBtn">⬇ Download PDF</button>
+          </div>
+        </div>
+
+        <div class="admin-panel" style="margin-top:16px;">
+          <div class="admin-table-wrap">
+            <table class="admin-table quote-table">
+              <thead>
+                <tr>
+                  <th>Description</th><th>Qty</th><th class="ta-right">Cost</th>
+                  <th class="ta-right">Value</th><th class="ta-right">Rate %</th><th class="ta-right">Duty</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="quoteBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="quote-summary">
+          <div class="qs-row"><span>Duty</span><b id="sumDuty">$0.00</b></div>
+          <div class="qs-row"><span>Processing Fee (1%, min $10 / max $750)</span><b id="sumProc">$0.00</b></div>
+          <div class="qs-row"><span>Environmental Levy <input type="number" id="levyInput" min="0" step="0.01" value="0" /></span><b id="sumLevy">$0.00</b></div>
+          <div class="qs-row"><span>Customs Item VAT (10%)</span><b id="sumVat">$0.00</b></div>
+          <div class="qs-row total"><span>Total customs &amp; fees</span><b id="sumTotal">$0.00</b></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/" class="logo"><span class="logo-main">GOFA</span><span class="logo-sub">SHIPPING</span></a>
+          <p>Your trusted gateway from the U.S. to Nassau and every island in The Bahamas.</p>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="/#how">How It Works</a>
+          <a href="/#rates">Rates</a>
+          <a href="/quote/">Get a Quote</a>
+          <a href="/contact/">Contact Us</a>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <a href="/account/">Log In</a>
+          <a href="/account/">Sign Up</a>
+          <a href="/tracking/">Track Package</a>
+        </div>
+        <div>
+          <h4>Get in touch</h4>
+          <p>📞 <a href="tel:+12424275699" style="display:inline;">(242) 427-5699</a></p>
+          <p>✉️ <a href="mailto:info@gofashipping.com" style="display:inline;">info@gofashipping.com</a></p>
+          <p>📍 Nassau, The Bahamas</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 <span class="gold">GOFA SHIPPING</span>. All rights reserved.</span>
+        <span>Your gateway from the U.S. to any island. · <a href="/admin/" style="color:rgba(255,255,255,.5);">Admin</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/api.js"></script>
+  <script src="/chatbot.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const toggle = document.getElementById('navToggle');
+    const links = document.getElementById('navLinks');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+    const money = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    let selectedFile = null, base64 = null, quote = null;
+    let RULES = { vatRate: 0.10, processingRate: 0.01 };
+
+    // ---- File selection ----
+    const dropzone = $('#dropzone'), fileInput = $('#fileInput');
+    $('#browseBtn').addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('click', (e) => { if (e.target.id === 'dropzone' || e.target.closest('#dropIdle')) fileInput.click(); });
+    ['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+    dropzone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+    function handleFile(file) {
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        base64 = String(e.target.result).split(',')[1];
+        $('#fileName').textContent = file.name;
+        if (file.type.startsWith('image/')) { $('#previewImg').src = e.target.result; $('#previewImg').hidden = false; }
+        else { $('#previewImg').hidden = true; }
+        $('#dropIdle').hidden = true;
+        $('#dropPreview').hidden = false;
+        $('#scanBtn').disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ---- Scan ----
+    function show(id) {
+      ['quoteUpload','quoteLoading','quoteError','quoteResult'].forEach(x => $('#'+x).hidden = (x !== id));
+    }
+    $('#scanBtn').addEventListener('click', scan);
+    $('#tryAgainBtn').addEventListener('click', () => show('quoteUpload'));
+    $('#newQuoteBtn').addEventListener('click', () => {
+      selectedFile = null; base64 = null; quote = null;
+      $('#dropIdle').hidden = false; $('#dropPreview').hidden = true; $('#scanBtn').disabled = true; fileInput.value = '';
+      show('quoteUpload');
+    });
+
+    async function scan() {
+      if (!base64) return;
+      show('quoteLoading');
+      try {
+        const data = await GofaAPI.getQuote({ image: base64, mimeType: selectedFile.type });
+        quote = data;
+        RULES = data.rules || RULES;
+        $('#levyInput').value = (data.levy != null ? data.levy : 0);
+        renderResult();
+        show('quoteResult');
+      } catch (err) {
+        if (err.code === 'BACKEND_NOT_CONFIGURED' || err.status === 503) {
+          $('#errTitle').textContent = 'AI quotes not enabled yet';
+          $('#errMsg').textContent = 'The AI service key has not been added on the server. Add GEMINI_API_KEY and try again.';
+        } else {
+          $('#errTitle').textContent = "Couldn't read that invoice";
+          $('#errMsg').textContent = err.message || 'We had trouble reading that file. Try a clearer photo of the invoice.';
+        }
+        show('quoteError');
+      }
+    }
+
+    // ---- Render + live recompute ----
+    function renderResult() {
+      $('#quoteBody').innerHTML = quote.items.map((it, idx) => `
+        <tr data-i="${idx}">
+          <td>${esc(it.description)}${it.category ? `<br><small class="muted">${esc(it.category)}</small>` : ''}</td>
+          <td><input class="q-in q-qty" type="number" min="1" step="1" value="${it.quantity}" /></td>
+          <td class="ta-right"><input class="q-in q-cost" type="number" min="0" step="0.01" value="${it.unitCost}" /></td>
+          <td class="ta-right q-value">${money(it.value)}</td>
+          <td class="ta-right"><input class="q-in q-rate" type="number" min="0" step="1" value="${it.dutyRate}" /></td>
+          <td class="ta-right q-duty">${money(it.duty)}</td>
+          <td class="ta-right"><button class="row-del q-remove" title="Remove">🗑</button></td>
+        </tr>`).join('');
+      recompute();
+    }
+
+    function recompute() {
+      let valueTotal = 0, dutyTotal = 0;
+      document.querySelectorAll('#quoteBody tr').forEach(tr => {
+        const qty = Math.max(1, Number(tr.querySelector('.q-qty').value) || 1);
+        const cost = Math.max(0, Number(tr.querySelector('.q-cost').value) || 0);
+        const rate = Math.max(0, Number(tr.querySelector('.q-rate').value) || 0);
+        const value = qty * cost, duty = value * rate / 100;
+        tr.querySelector('.q-value').textContent = money(value);
+        tr.querySelector('.q-duty').textContent = money(duty);
+        valueTotal += value; dutyTotal += duty;
+      });
+      const pMin = RULES.processingMin != null ? RULES.processingMin : 10;
+      const pMax = RULES.processingMax != null ? RULES.processingMax : 750;
+      let processing = valueTotal * (RULES.processingRate || 0.01);
+      if (valueTotal > 0) processing = Math.min(pMax, Math.max(pMin, processing)); else processing = 0;
+      const levy = Math.max(0, Number($('#levyInput').value) || 0);
+      const vat = (valueTotal + dutyTotal + processing + levy) * (RULES.vatRate || 0.10);
+      const total = dutyTotal + processing + levy + vat;
+      $('#sumDuty').textContent = money(dutyTotal);
+      $('#sumProc').textContent = money(processing);
+      $('#sumLevy').textContent = money(levy);
+      $('#sumVat').textContent = money(vat);
+      $('#sumTotal').textContent = money(total);
+      quote._totals = { valueTotal, dutyTotal, processing, levy, vat, total };
+    }
+
+    document.addEventListener('input', (e) => { if (e.target.closest('#quoteResult')) recompute(); });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.q-remove')) { e.target.closest('tr').remove(); recompute(); }
+    });
+
+    // ---- PDF ----
+    $('#downloadBtn').addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text('REPORT', 196, 20, { align: 'right' });
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      doc.text('GOFA Shipping - Calculation Rules', 196, 27, { align: 'right' });
+      doc.text(today, 196, 33, { align: 'right' });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text('Items', 14, 30);
+
+      const body = [];
+      document.querySelectorAll('#quoteBody tr').forEach(tr => {
+        const desc = tr.children[0].innerText.replace(/\n/g, ' ');
+        const qty = tr.querySelector('.q-qty').value;
+        const cost = Number(tr.querySelector('.q-cost').value) || 0;
+        const rate = Number(tr.querySelector('.q-rate').value) || 0;
+        const value = (Number(qty) || 1) * cost;
+        const duty = value * rate / 100;
+        body.push([desc, qty, money(cost), money(value), rate + '%', money(duty)]);
+      });
+      doc.autoTable({
+        startY: 40, head: [['Description', 'Qty', 'Cost', 'Value', 'Rate', 'Duty']], body,
+        theme: 'striped', headStyles: { fillColor: [10, 26, 60] },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: { 1:{halign:'center'}, 2:{halign:'right'}, 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'} }
+      });
+      const t = quote._totals; let y = doc.lastAutoTable.finalY + 12;
+      const line = (label, val, bold) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 12 : 10);
+        doc.text(label, 130, y, { align: 'right' }); doc.text(val, 196, y, { align: 'right' }); y += 7;
+      };
+      line('Duty', money(t.dutyTotal));
+      line('Processing Fee (1%)', money(t.processing));
+      line('Environmental Levy', money(t.levy));
+      line('Customs Item VAT (10%)', money(t.vat));
+      y += 2; line('Total', money(t.total), true);
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(120);
+      doc.text('AI-generated estimate by GOFA Shipping. Final duty is determined by Bahamas Customs.', 14, 285);
+      doc.save('GOFA-customs-quote.pdf');
+    });
+  </script>
+</body>
+</html>

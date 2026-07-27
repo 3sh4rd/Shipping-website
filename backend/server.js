@@ -29,8 +29,17 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "Gofa";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Raelynn23$";
 const ALLOWED = (process.env.ALLOWED_ORIGINS || "*").split(",").map(s => s.trim());
 
+// ---- AI Quote (Gemini) + customs fee rules ----
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const VAT_RATE = Number(process.env.VAT_RATE || "0.10");          // 10% customs VAT
+const PROCESSING_RATE = Number(process.env.PROCESSING_RATE || "0.01"); // 1% processing fee
+const PROC_MIN = Number(process.env.PROC_MIN || "10");            // processing fee minimum $10
+const PROC_MAX = Number(process.env.PROC_MAX || "750");           // processing fee maximum $750
+const ENV_LEVY = Number(process.env.ENV_LEVY || "0");             // flat environmental levy (editable on the page)
+
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "15mb" })); // allow base64 invoice images
 app.use(cors({
   origin: (origin, cb) => {
     if (ALLOWED.includes("*") || !origin || ALLOWED.includes(origin)) return cb(null, true);
@@ -120,6 +129,82 @@ app.get("/api/tracking/:id", wrap(async (req, res) => {
     [tn]
   )).rows;
   res.json({ ...rows[0], events });
+}));
+
+// ================= AI QUOTE (Gemini) =================
+app.post("/api/quote", wrap(async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(503).json({ code: "AI_NOT_CONFIGURED", message: "AI quote is not enabled yet. Set GEMINI_API_KEY on the server." });
+  }
+  const { image, mimeType } = req.body || {};
+  if (!image) return res.status(400).json({ message: "No image provided." });
+
+  const prompt = [
+    "You are a customs classification assistant for GOFA Shipping, which imports goods into The Bahamas.",
+    "Read this invoice/receipt/order image and extract every purchased product line item.",
+    "For EACH item return: description (short, human readable), quantity (integer), unitCost (number in USD),",
+    "category (best product category), and dutyRate (the Bahamas import DUTY rate as a percentage NUMBER for that item type).",
+    "Use realistic Bahamas customs duty rates for the item type (common values include 0, 10, 20, 25, 35, 45, 65).",
+    "Ignore shipping, tax, subtotal, discount and total lines - only real products.",
+    "Respond ONLY as JSON of the form: {\"items\":[{\"description\":\"\",\"quantity\":1,\"unitCost\":0,\"category\":\"\",\"dutyRate\":0}]}"
+  ].join(" ");
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  let aiResp;
+  try {
+    aiResp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType || "image/jpeg", data: image } }
+        ]}],
+        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+      })
+    });
+  } catch (_) {
+    return res.status(502).json({ message: "Could not reach the AI service." });
+  }
+  if (!aiResp.ok) {
+    const t = await aiResp.text().catch(() => "");
+    console.error("Gemini error", aiResp.status, t);
+    return res.status(502).json({ message: "The AI could not read that file. Try a clearer photo." });
+  }
+  const data = await aiResp.json();
+  let parsed;
+  try {
+    const text = data.candidates[0].content.parts.map(p => p.text || "").join("");
+    parsed = JSON.parse(text);
+  } catch (_) {
+    return res.status(422).json({ code: "UNREADABLE", message: "We had trouble reading that file. Try a clearer photo of the invoice." });
+  }
+
+  const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+  if (!rawItems.length) return res.status(422).json({ code: "UNREADABLE", message: "No items were found. Try a clearer photo of the invoice." });
+
+  const items = rawItems.map(it => {
+    const quantity = Math.max(1, Math.round(Number(it.quantity) || 1));
+    const unitCost = Math.max(0, Number(it.unitCost) || 0);
+    const dutyRate = Math.max(0, Number(it.dutyRate) || 0);
+    const value = +(quantity * unitCost).toFixed(2);
+    const duty = +(value * dutyRate / 100).toFixed(2);
+    return { description: String(it.description || "Item"), category: String(it.category || ""), quantity, unitCost, dutyRate, value, duty };
+  });
+
+  const valueTotal = +items.reduce((s, i) => s + i.value, 0).toFixed(2);
+  const dutyTotal = +items.reduce((s, i) => s + i.duty, 0).toFixed(2);
+  const processing = valueTotal > 0
+    ? +Math.min(PROC_MAX, Math.max(PROC_MIN, valueTotal * PROCESSING_RATE)).toFixed(2)
+    : 0;
+  const levy = +ENV_LEVY.toFixed(2);
+  const vat = +((valueTotal + dutyTotal + processing + levy) * VAT_RATE).toFixed(2);
+  const totalFees = +(dutyTotal + processing + levy + vat).toFixed(2);
+
+  res.json({
+    items, valueTotal, dutyTotal, processing, levy, vat, totalFees,
+    rules: { vatRate: VAT_RATE, processingRate: PROCESSING_RATE, processingMin: PROC_MIN, processingMax: PROC_MAX, levy }
+  });
 }));
 
 // ================= ADMIN =================
