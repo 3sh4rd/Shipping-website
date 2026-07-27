@@ -114,7 +114,11 @@
           <div class="field"><label id="lblId">Order #</label><input id="fId" required placeholder="GOFA-1005" /></div>
           <div class="field"><label>Customer name</label><input id="fCustomer" required placeholder="Full name" /></div>
         </div>
-        <div class="field"><label>Customer email</label><input id="fEmail" type="email" placeholder="customer@email.com" /></div>
+        <div class="field">
+          <label>Customer email</label>
+          <input id="fEmail" type="email" placeholder="customer@email.com" />
+          <small class="muted" style="display:block;margin-top:5px;">Use the customer's <b>account email</b> so this shows on their dashboard, statement &amp; priority flag.</small>
+        </div>
         <div class="field order-only"><label>Service</label>
           <select id="fService">
             <option>Ocean Freight</option>
