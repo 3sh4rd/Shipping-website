@@ -76,6 +76,14 @@ async function activatePlan(userId, plan) {
   );
 }
 
+// ---- SunCash checkout (V1) ----
+const SUNCASH_ENV = process.env.SUNCASH_ENV || "dev";
+const SUNCASH_BASE = SUNCASH_ENV === "prod" ? "https://prod.mysuncash.com" : "http://dev.mysuncash.com";
+const SUNCASH_MERCHANT_KEY = process.env.SUNCASH_MERCHANT_KEY || "";
+const SUNCASH_MERCHANT_NAME = process.env.SUNCASH_MERCHANT_NAME || "";
+const PUBLIC_API_URL = (process.env.PUBLIC_API_URL || "").replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || "").replace(/\/+$/, "");
+
 const app = express();
 app.use(express.json({ limit: "15mb" })); // allow base64 invoice images
 app.use(cors({
@@ -289,7 +297,73 @@ app.post("/api/billing/paypal", auth("customer"), wrap(async (req, res) => {
   res.json({ ok: true, user: publicUser(user) });
 }));
 
-// SunCash: manual - record a pending payment for admin to confirm.
+// SunCash online checkout: create a hosted checkout and return the redirect URL.
+app.post("/api/billing/suncash/start", auth("customer"), wrap(async (req, res) => {
+  const { plan } = req.body || {};
+  if (!PLAN_PRICES[plan]) return res.status(400).json({ message: "Unknown plan." });
+  if (!SUNCASH_MERCHANT_KEY || !SUNCASH_MERCHANT_NAME || !PUBLIC_API_URL) {
+    return res.status(503).json({ code: "SUNCASH_NOT_CONFIGURED", message: "SunCash online checkout not enabled yet." });
+  }
+  const price = PLAN_PRICES[plan];
+  const token = "SC" + Date.now() + Math.random().toString(36).slice(2, 8);
+  const user = (await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id])).rows[0];
+  const ins = await pool.query(
+    "INSERT INTO payments (user_id, email, customer, plan, method, amount, reference, status) VALUES ($1,$2,$3,$4,'suncash',$5,$6,'pending') RETURNING id",
+    [req.user.id, req.user.email, user ? user.name : null, plan, price, token]
+  );
+  const callback = `${PUBLIC_API_URL}/api/billing/suncash/callback/${token}`;
+  const params = new URLSearchParams({
+    method: "payment",
+    P01: SUNCASH_MERCHANT_KEY,
+    P02: SUNCASH_MERCHANT_NAME,
+    P03: price.toFixed(2),
+    P04: token,
+    P05: callback,
+    P06: `GOFA ${plan} Membership|1|${price.toFixed(2)}`
+  });
+  let scResp;
+  try {
+    const r = await fetch(`${SUNCASH_BASE}/api/checkout.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString()
+    });
+    scResp = await r.json();
+  } catch (_) {
+    return res.status(502).json({ message: "Could not reach SunCash. Please try again." });
+  }
+  const ok = scResp && String(scResp.Success).toUpperCase() === "YES" && scResp.ResponseMessage && scResp.ResponseMessage.url;
+  if (!ok) {
+    const msg = (scResp && typeof scResp.ResponseMessage === "string") ? scResp.ResponseMessage : "SunCash checkout could not be started.";
+    return res.status(502).json({ message: msg });
+  }
+  await pool.query("UPDATE payments SET provider_ref = $1 WHERE id = $2", [String(scResp.ResponseMessage.reference_id || ""), ins.rows[0].id]);
+  res.json({ url: scResp.ResponseMessage.url });
+}));
+
+// SunCash callback: SunCash appends /{base64} to our callback URL after payment.
+app.get("/api/billing/suncash/callback/:ref/:data", wrap(async (req, res) => {
+  const { ref, data } = req.params;
+  let decoded = "";
+  try { decoded = Buffer.from(data, "base64").toString("utf8"); } catch (_) {}
+  const success = /success/i.test(decoded);
+  const p = (await pool.query("SELECT * FROM payments WHERE reference = $1", [ref])).rows[0];
+  if (p && p.status === "pending") {
+    if (success) {
+      await pool.query("UPDATE payments SET status = 'paid' WHERE id = $1", [p.id]);
+      if (p.user_id) await activatePlan(p.user_id, p.plan);
+    } else {
+      await pool.query("UPDATE payments SET status = 'rejected' WHERE id = $1", [p.id]);
+    }
+  }
+  res.redirect(302, (SITE_URL || "") + "/account/?sc=" + (success ? "success" : "failed"));
+}));
+// Fallback if SunCash calls back without the encoded segment
+app.get("/api/billing/suncash/callback/:ref", (_req, res) => {
+  res.redirect(302, (SITE_URL || "") + "/account/?sc=failed");
+});
+
+// SunCash manual fallback: record a pending payment for admin to confirm.
 app.post("/api/billing/suncash", auth("customer"), wrap(async (req, res) => {
   const { plan, reference } = req.body || {};
   if (!PLAN_PRICES[plan]) return res.status(400).json({ message: "Unknown plan." });

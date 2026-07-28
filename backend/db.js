@@ -78,6 +78,8 @@ async function init() {
   `);
   // Membership expiry (added after initial launch)
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires TIMESTAMPTZ");
+  // SunCash provider reference for online checkout
+  await pool.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_ref TEXT");
   await seed();
 }
 

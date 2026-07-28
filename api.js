@@ -61,6 +61,7 @@
     me: () => request(ep.me || "/api/auth/me"),
     activity: () => request(ep.activity || "/api/auth/activity"),
     buyPaypal: (payload) => request("/api/billing/paypal", { method: "POST", body: payload }),
+    suncashStart: (payload) => request("/api/billing/suncash/start", { method: "POST", body: payload }),
     buySuncash: (payload) => request("/api/billing/suncash", { method: "POST", body: payload }),
     adminPayments: () => request("/api/admin/payments"),
     adminApprovePayment: (id) => request("/api/admin/payments/" + encodeURIComponent(id) + "/approve", { method: "POST" }),
