@@ -147,6 +147,20 @@
           <ul id="perksList"></ul>
         </div>
 
+        <div class="ship-addr">
+          <div>
+            <h3>Your U.S. shipping address</h3>
+            <p class="muted" style="font-size:.88rem; margin-bottom:10px;">Shop at any U.S. store and ship to this address. Put <b>your name</b> on it so we match the package to your account.</p>
+            <address id="shipAddrBox">
+              <b><span id="shipName">Your Name</span> / GOFA</b><br>
+              5427 NW 72nd Ave, Suite 1<br>
+              Miami, FL 33166-4223<br>
+              United States
+            </address>
+          </div>
+          <button class="btn btn-gold" id="copyAddr">Copy address</button>
+        </div>
+
         <h3 class="dash-sec">Your shipments</h3>
         <div class="dash-grid" id="dashShipments"></div>
 
@@ -330,6 +344,7 @@
       $('#perksList').innerHTML = (PERKS[plan] || PERKS.basic).map(p => `<li>${esc(p)}</li>`).join('');
       $('#perksPanel').hidden = false;
       $('#statementBtn').hidden = false;
+      if (user && user.name) $('#shipName').textContent = user.name;
       const exp = user && user.planExpires ? new Date(user.planExpires) : null;
       $('#planExpiry').textContent = (exp && plan !== 'basic')
         ? 'Active until ' + exp.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -499,6 +514,13 @@
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(120);
       doc.text('GOFA Shipping - Nassau, The Bahamas - (242) 427-5699', 14, 285);
       doc.save('GOFA-statement.pdf');
+    });
+
+    $('#copyAddr').addEventListener('click', () => {
+      const txt = $('#shipAddrBox').innerText.replace(/\n+/g, '\n').trim();
+      navigator.clipboard.writeText(txt).then(() => {
+        const b = $('#copyAddr'); const o = b.textContent; b.textContent = '✓ Copied'; setTimeout(() => b.textContent = o, 1500);
+      }).catch(() => {});
     });
 
     $('#logoutBtn').addEventListener('click', () => {

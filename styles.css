@@ -669,6 +669,14 @@ img, svg { display: block; max-width: 100%; }
 .pay-divider { text-align: center; border-top: 1px solid var(--line); margin: 22px 0 10px; }
 .pay-divider span { background: var(--white); padding: 0 12px; position: relative; top: -11px; color: var(--muted); font-size: .85rem; }
 
+/* U.S. shipping address card */
+.ship-addr { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff9ec, #fff); border: 1px solid rgba(244,185,66,.4);
+  border-left: 5px solid var(--gold-500); border-radius: 16px; padding: 20px 24px; margin-bottom: 8px; }
+.ship-addr h3 { color: var(--navy-900); font-size: 1.15rem; margin-bottom: 4px; }
+.ship-addr address { font-style: normal; color: var(--slate); line-height: 1.55; font-size: .98rem; }
+.ship-addr address b { color: var(--navy-900); }
+
 /* ============================================================
    TRACKING PAGE
    ============================================================ */
