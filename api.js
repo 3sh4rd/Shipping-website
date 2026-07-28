@@ -64,6 +64,7 @@
     suncashStart: (payload) => request("/api/billing/suncash/start", { method: "POST", body: payload }),
     buySuncash: (payload) => request("/api/billing/suncash", { method: "POST", body: payload }),
     adminPayments: () => request("/api/admin/payments"),
+    adminQuotes: () => request("/api/admin/quotes"),
     adminApprovePayment: (id) => request("/api/admin/payments/" + encodeURIComponent(id) + "/approve", { method: "POST" }),
     adminRejectPayment: (id) => request("/api/admin/payments/" + encodeURIComponent(id) + "/reject", { method: "POST" }),
     track: (trackingNumber) => request((ep.tracking || "/api/tracking/") + encodeURIComponent(trackingNumber)),

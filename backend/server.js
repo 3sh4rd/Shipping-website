@@ -112,6 +112,13 @@ function auth(role) {
   };
 }
 const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s || ""));
+// Decode a customer token if present, but don't require it
+function optionalCustomer(req) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return null;
+  try { const d = jwt.verify(token, JWT_SECRET); return d.role === "customer" ? d : null; } catch (_) { return null; }
+}
 // Wrap async handlers so errors return JSON instead of crashing
 const wrap = (fn) => (req, res) => fn(req, res).catch(err => {
   console.error(err);
@@ -254,6 +261,20 @@ app.post("/api/quote", wrap(async (req, res) => {
   const levy = +ENV_LEVY.toFixed(2);
   const vat = +((valueTotal + dutyTotal + processing + levy) * VAT_RATE).toFixed(2);
   const totalFees = +(dutyTotal + processing + levy + vat).toFixed(2);
+
+  // Save the quote so admins can see what customers are quoting (ties to the account if logged in)
+  try {
+    const cust = optionalCustomer(req);
+    let customerName = null;
+    if (cust) {
+      const u = (await pool.query("SELECT name FROM users WHERE id = $1", [cust.id])).rows[0];
+      customerName = u ? u.name : null;
+    }
+    await pool.query(
+      "INSERT INTO quotes (user_id, email, customer, items, value_total, duty_total, processing, levy, vat, total) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+      [cust ? cust.id : null, cust ? cust.email : null, customerName, JSON.stringify(items), valueTotal, dutyTotal, processing, levy, vat, totalFees]
+    );
+  } catch (e) { console.error("quote save failed", e.message); }
 
   res.json({
     items, valueTotal, dutyTotal, processing, levy, vat, totalFees,
@@ -447,6 +468,9 @@ app.get("/api/admin/customers", auth("admin"), wrap(async (_req, res) => {
 
 app.get("/api/admin/payments", auth("admin"), wrap(async (_req, res) => {
   res.json((await pool.query("SELECT * FROM payments ORDER BY created_at DESC")).rows);
+}));
+app.get("/api/admin/quotes", auth("admin"), wrap(async (_req, res) => {
+  res.json((await pool.query("SELECT * FROM quotes ORDER BY created_at DESC LIMIT 500")).rows);
 }));
 app.post("/api/admin/payments/:id/approve", auth("admin"), wrap(async (req, res) => {
   const p = (await pool.query("SELECT * FROM payments WHERE id = $1", [req.params.id])).rows[0];

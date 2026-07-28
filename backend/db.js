@@ -75,6 +75,20 @@ async function init() {
       status     TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS quotes (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      email       TEXT,
+      customer    TEXT,
+      items       JSONB,
+      value_total NUMERIC DEFAULT 0,
+      duty_total  NUMERIC DEFAULT 0,
+      processing  NUMERIC DEFAULT 0,
+      levy        NUMERIC DEFAULT 0,
+      vat         NUMERIC DEFAULT 0,
+      total       NUMERIC DEFAULT 0,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
   `);
   // Membership expiry (added after initial launch)
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires TIMESTAMPTZ");

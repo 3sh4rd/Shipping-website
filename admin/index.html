@@ -72,6 +72,7 @@
         <button class="admin-tab active" data-tab="orders">Orders</button>
         <button class="admin-tab" data-tab="invoices">Invoices</button>
         <button class="admin-tab" data-tab="payments">Payments</button>
+        <button class="admin-tab" data-tab="quotes">Quotes</button>
         <input type="search" id="adminSearch" class="admin-search" placeholder="Search…" />
       </div>
 
@@ -95,6 +96,18 @@
               <tr><th>Date</th><th>Customer</th><th>Plan</th><th>Method</th><th class="ta-right">Amount</th><th>Reference</th><th>Status</th><th></th></tr>
             </thead>
             <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quotes table -->
+      <div class="admin-panel" id="quotesPanel" hidden>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Date</th><th>Customer</th><th>Items</th><th class="ta-right">Value</th><th class="ta-right">Duty</th><th class="ta-right">Total</th><th></th></tr>
+            </thead>
+            <tbody id="quotesBody"></tbody>
           </table>
         </div>
       </div>
@@ -150,6 +163,24 @@
         </div>
         <button type="submit" class="btn btn-gold btn-block" id="saveBtn">Save</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Quote details modal -->
+  <div class="modal-overlay" id="quoteModal" hidden>
+    <div class="modal" style="width:min(680px,100%);">
+      <div class="modal-head">
+        <h3 id="qmTitle">Quote details</h3>
+        <button class="modal-close" id="qmClose" aria-label="Close">&times;</button>
+      </div>
+      <p class="muted" id="qmSub" style="margin-bottom:12px;"></p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Item</th><th>Qty</th><th class="ta-right">Cost</th><th class="ta-right">Value</th><th class="ta-right">Rate</th><th class="ta-right">Duty</th></tr></thead>
+          <tbody id="qmBody"></tbody>
+        </table>
+      </div>
+      <div class="quote-summary" style="margin-top:16px;" id="qmTotals"></div>
     </div>
   </div>
 
@@ -241,7 +272,26 @@
     });
 
     // ---- Data loading ----
-    let ordersData = [], invoicesData = [], paymentsData = [];
+    let ordersData = [], invoicesData = [], paymentsData = [], quotesData = [];
+
+    function renderQuotes(list) {
+      const q = $('#adminSearch').value.trim().toLowerCase();
+      const rows = list.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q));
+      $('#quotesBody').innerHTML = rows.length ? rows.map(r => {
+        const when = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+        const items = Array.isArray(r.items) ? r.items : [];
+        const who = r.customer || r.email || 'Guest';
+        return `<tr>
+          <td>${esc(when)}</td>
+          <td>${esc(who)}${r.email ? `<br><small class="muted">${esc(r.email)}</small>` : ''}</td>
+          <td>${items.length}</td>
+          <td class="ta-right">${money(r.value_total)}</td>
+          <td class="ta-right">${money(r.duty_total)}</td>
+          <td class="ta-right">${money(r.total)}</td>
+          <td class="ta-right"><button class="row-edit" data-quote="${esc(r.id)}" title="View">👁</button></td>
+        </tr>`;
+      }).join('') : emptyRow(7, q ? 'No matching quotes.' : 'No quotes yet.');
+    }
 
     function renderPayments(list) {
       const q = $('#adminSearch').value.trim().toLowerCase();
@@ -347,6 +397,17 @@
           ? notConfiguredRow(8, '/api/admin/payments')
           : emptyRow(8, 'Could not load payments: ' + (err.message || 'error'));
       }
+      // Quotes
+      try {
+        const data = await GofaAPI.adminQuotes();
+        quotesData = Array.isArray(data) ? data : [];
+        renderQuotes(quotesData);
+      } catch (err) {
+        quotesData = [];
+        $('#quotesBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
+          ? notConfiguredRow(7, '/api/admin/quotes')
+          : emptyRow(7, 'Could not load quotes: ' + (err.message || 'error'));
+      }
       renderSummary();
     }
 
@@ -358,8 +419,38 @@
       $('#ordersPanel').hidden = tab !== 'orders';
       $('#invoicesPanel').hidden = tab !== 'invoices';
       $('#paymentsPanel').hidden = tab !== 'payments';
+      $('#quotesPanel').hidden = tab !== 'quotes';
     }));
-    $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); renderPayments(paymentsData); });
+    $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); renderPayments(paymentsData); renderQuotes(quotesData); });
+
+    // View a saved quote's details
+    $('#qmClose').addEventListener('click', () => { $('#quoteModal').hidden = true; });
+    $('#quoteModal').addEventListener('click', (e) => { if (e.target === $('#quoteModal')) $('#quoteModal').hidden = true; });
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('.row-edit[data-quote]');
+      if (!b) return;
+      const r = quotesData.find(x => String(x.id) === String(b.dataset.quote));
+      if (!r) return;
+      const items = Array.isArray(r.items) ? r.items : [];
+      $('#qmTitle').textContent = 'Quote #' + r.id;
+      $('#qmSub').textContent = (r.customer || r.email || 'Guest') + ' · ' + (r.created_at ? new Date(r.created_at).toLocaleString() : '');
+      $('#qmBody').innerHTML = items.map(it => `<tr>
+        <td>${esc(it.description || '')}${it.category ? `<br><small class="muted">${esc(it.category)}</small>` : ''}</td>
+        <td>${esc(it.quantity)}</td>
+        <td class="ta-right">${money(it.unitCost)}</td>
+        <td class="ta-right">${money(it.value)}</td>
+        <td class="ta-right">${esc(it.dutyRate)}%</td>
+        <td class="ta-right">${money(it.duty)}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="admin-empty">No items.</td></tr>';
+      $('#qmTotals').innerHTML = `
+        <div class="qs-row"><span>Value</span><b>${money(r.value_total)}</b></div>
+        <div class="qs-row"><span>Duty</span><b>${money(r.duty_total)}</b></div>
+        <div class="qs-row"><span>Processing</span><b>${money(r.processing)}</b></div>
+        <div class="qs-row"><span>Environmental Levy</span><b>${money(r.levy)}</b></div>
+        <div class="qs-row"><span>VAT</span><b>${money(r.vat)}</b></div>
+        <div class="qs-row total"><span>Total customs &amp; fees</span><b>${money(r.total)}</b></div>`;
+      $('#quoteModal').hidden = false;
+    });
 
     // Approve / reject SunCash (and other) payments
     document.addEventListener('click', async (e) => {
