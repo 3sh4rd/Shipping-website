@@ -43,5 +43,16 @@ window.GOFA_CONFIG = {
     username: "Gofa",
     // SHA-256 hash of the admin password
     passwordHash: "3ccf707068385368ec819181fd8b35f72ea3fdfb7a036396cd0d1a782e88d5c2"
+  },
+
+  // ---- Membership billing ----
+  billing: {
+    // PayPal public Client ID from developer.paypal.com (the SECRET stays on the server).
+    paypalClientId: "AafhQDdKnAsIxFBrf9rvbZmbYWxzj0ZAXSHTaGELXgf8ZvO12YueMDj6ABXPyRGaULFw53woxEXNAf9K",
+    currency: "USD",
+    // Your SunCash number customers send payment to (manual confirmation in admin).
+    suncashNumber: "",
+    // Monthly prices - keep in sync with the server's PRICE_* env vars.
+    plans: { plus: 19.99, business: 49.99, family: 29.99 }
   }
 };

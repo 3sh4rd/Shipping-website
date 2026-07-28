@@ -133,6 +133,7 @@
             <h2 id="dashHello">Welcome back</h2>
             <p id="dashEmail" class="muted"></p>
             <span class="plan-badge" id="planBadge" hidden></span>
+            <div id="planExpiry" class="muted" style="font-size:.85rem; margin-top:6px;"></div>
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn btn-gold" id="statementBtn" hidden>⬇ Download Statement</button>
@@ -161,6 +162,10 @@
             <tr><th>Invoice #</th><th>Issued</th><th>Due</th><th>Status</th><th class="ta-right">Amount</th></tr>
           </thead><tbody id="invBody"></tbody></table>
         </div></div>
+
+        <h3 class="dash-sec">Upgrade your membership</h3>
+        <p class="muted" style="margin-bottom:14px;">Pay monthly with PayPal or SunCash. Your plan activates for 30 days.</p>
+        <div class="upgrade-grid" id="upgradeGrid"></div>
       </div>
 
     </div>
@@ -201,12 +206,36 @@
     </div>
   </footer>
 
+  <!-- Payment modal -->
+  <div class="modal-overlay" id="payModal" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="payTitle">Subscribe</h3>
+        <button class="modal-close" id="payClose" aria-label="Close">&times;</button>
+      </div>
+      <p class="muted" id="paySub" style="margin-bottom:14px;"></p>
+      <div class="admin-alert" id="payAlert" hidden></div>
+
+      <h4 style="color:var(--navy-900); margin-bottom:8px;">Pay with PayPal</h4>
+      <div id="paypalButtons"></div>
+      <p id="paypalNote" class="muted" style="font-size:.85rem;"></p>
+
+      <div class="pay-divider"><span>or</span></div>
+
+      <h4 style="color:var(--navy-900); margin-bottom:8px;">Pay with SunCash</h4>
+      <p class="muted" style="font-size:.9rem;">Send <b id="scAmount"></b> to our SunCash number <b id="scNumber"></b>, then enter your SunCash reference number so we can confirm it.</p>
+      <div class="field"><input id="scRef" placeholder="SunCash reference #" /></div>
+      <button class="btn btn-navy btn-block" id="scSubmit">I've sent it — submit for confirmation</button>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="/config.js"></script>
   <script src="/api.js"></script>
   <script src="/chatbot.js"></script>
   <script>
+    const CFG = window.GOFA_CONFIG || {};
     const $ = (s) => document.querySelector(s);
     const toggle = document.getElementById('navToggle');
     const links = document.getElementById('navLinks');
@@ -297,7 +326,91 @@
       $('#perksList').innerHTML = (PERKS[plan] || PERKS.basic).map(p => `<li>${esc(p)}</li>`).join('');
       $('#perksPanel').hidden = false;
       $('#statementBtn').hidden = false;
+      const exp = user && user.planExpires ? new Date(user.planExpires) : null;
+      $('#planExpiry').textContent = (exp && plan !== 'basic')
+        ? 'Active until ' + exp.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : '';
+      renderUpgrade();
     }
+
+    // ---- Membership purchase ----
+    const BILLING = CFG.billing || { plans: { plus: 19.99, business: 49.99, family: 29.99 }, currency: 'USD', suncashNumber: '', paypalClientId: '' };
+    let currentPlan = null;
+
+    function renderUpgrade() {
+      const plans = BILLING.plans || {};
+      $('#upgradeGrid').innerHTML = ['plus', 'business', 'family'].map(p => `
+        <div class="upgrade-card">
+          <div class="plan-name">${esc(PLAN_LABEL[p])}</div>
+          <div class="plan-price">$${Number(plans[p] || 0).toFixed(2)} <span>/mo</span></div>
+          <button class="btn btn-gold btn-block" data-plan="${p}">Choose ${esc(PLAN_LABEL[p])}</button>
+        </div>`).join('');
+    }
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('.upgrade-card button[data-plan]');
+      if (b) openPay(b.dataset.plan);
+    });
+
+    function payAlert(msg, type) { const a = $('#payAlert'); a.hidden = false; a.className = 'admin-alert' + (type === 'ok' ? ' ' : ''); a.style.background = type === 'ok' ? 'rgba(56,168,107,.12)' : ''; a.style.color = type === 'ok' ? '#1f7a4d' : ''; a.style.borderColor = type === 'ok' ? 'rgba(56,168,107,.5)' : ''; a.textContent = msg; }
+    function closePay() { $('#payModal').hidden = true; }
+    $('#payClose').addEventListener('click', closePay);
+    $('#payModal').addEventListener('click', (e) => { if (e.target === $('#payModal')) closePay(); });
+
+    function loadPaypalSdk() {
+      return new Promise((resolve, reject) => {
+        if (window.paypal) return resolve();
+        const cid = BILLING.paypalClientId;
+        if (!cid) return reject(new Error('no-client-id'));
+        const s = document.createElement('script');
+        s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cid) + '&currency=' + (BILLING.currency || 'USD');
+        s.onload = () => resolve(); s.onerror = () => reject(new Error('sdk-failed'));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function openPay(plan) {
+      currentPlan = plan;
+      const price = Number((BILLING.plans || {})[plan] || 0);
+      $('#payTitle').textContent = 'Subscribe to ' + PLAN_LABEL[plan];
+      $('#paySub').textContent = '$' + price.toFixed(2) + ' / month · activates for 30 days';
+      $('#scAmount').textContent = '$' + price.toFixed(2);
+      $('#scNumber').textContent = BILLING.suncashNumber || '(SunCash number not set)';
+      $('#scRef').value = '';
+      $('#payAlert').hidden = true;
+      $('#paypalButtons').innerHTML = '';
+      $('#paypalNote').textContent = '';
+      $('#payModal').hidden = false;
+
+      try {
+        await loadPaypalSdk();
+        paypal.Buttons({
+          style: { color: 'gold', shape: 'pill', label: 'pay', height: 44 },
+          createOrder: (data, actions) => actions.order.create({
+            purchase_units: [{ amount: { value: price.toFixed(2) }, description: 'GOFA ' + PLAN_LABEL[plan] + ' (1 month)' }]
+          }),
+          onApprove: async (data, actions) => {
+            await actions.order.capture();
+            try {
+              await GofaAPI.buyPaypal({ plan, orderID: data.orderID });
+              payAlert('✓ Payment complete! Your ' + PLAN_LABEL[plan] + ' is now active.', 'ok');
+              setTimeout(() => { closePay(); loadDashboardData(); }, 1400);
+            } catch (err) { payAlert('❌ ' + (err.message || 'Could not verify payment.')); }
+          },
+          onError: () => payAlert('❌ PayPal error. Please try again or use SunCash.')
+        }).render('#paypalButtons');
+      } catch (e) {
+        $('#paypalNote').textContent = 'PayPal is not set up yet — please use SunCash below.';
+      }
+    }
+
+    $('#scSubmit').addEventListener('click', async () => {
+      const ref = $('#scRef').value.trim();
+      if (!ref) { payAlert('❌ Please enter your SunCash reference number.'); return; }
+      try {
+        await GofaAPI.buySuncash({ plan: currentPlan, reference: ref });
+        payAlert("✓ Submitted! We'll activate your " + PLAN_LABEL[currentPlan] + " once we confirm your SunCash payment.", 'ok');
+      } catch (err) { payAlert('❌ ' + (err.message || 'Could not submit.')); }
+    });
 
     async function loadDashboardData() {
       try {

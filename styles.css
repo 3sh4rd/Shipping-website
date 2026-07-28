@@ -525,6 +525,8 @@ img, svg { display: block; max-width: 100%; }
 .row-edit:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
 .row-del { background: rgba(225,75,75,.1); border: 1px solid rgba(225,75,75,.35); color: #b23636; }
 .row-del:hover { background: #e14b4b; color: #fff; border-color: #e14b4b; }
+.row-approve { width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 1rem; background: rgba(56,168,107,.12); border: 1px solid rgba(56,168,107,.4); color: #1f7a4d; transition: all .15s ease; }
+.row-approve:hover { background: #38a86b; color: #fff; border-color: #38a86b; }
 
 /* Modal */
 .modal-overlay {
@@ -657,6 +659,15 @@ img, svg { display: block; max-width: 100%; }
 .perks-panel ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 20px; }
 .perks-panel li { position: relative; padding-left: 24px; color: rgba(255,255,255,.9); font-size: .93rem; }
 .perks-panel li::before { content: "✓"; position: absolute; left: 0; color: var(--gold-400); font-weight: 800; }
+
+/* Upgrade / purchase */
+.upgrade-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.upgrade-card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 22px; text-align: center; box-shadow: var(--shadow-sm); }
+.upgrade-card .plan-name { font-family: var(--font-head); font-weight: 800; color: var(--navy-900); }
+.upgrade-card .plan-price { font-family: var(--font-head); font-weight: 800; font-size: 1.6rem; color: var(--navy-900); margin: 8px 0 16px; }
+.upgrade-card .plan-price span { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.pay-divider { text-align: center; border-top: 1px solid var(--line); margin: 22px 0 10px; }
+.pay-divider span { background: var(--white); padding: 0 12px; position: relative; top: -11px; color: var(--muted); font-size: .85rem; }
 
 /* ============================================================
    TRACKING PAGE

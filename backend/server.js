@@ -38,6 +38,44 @@ const PROC_MIN = Number(process.env.PROC_MIN || "10");            // processing 
 const PROC_MAX = Number(process.env.PROC_MAX || "750");           // processing fee maximum $750
 const ENV_LEVY = Number(process.env.ENV_LEVY || "0");             // flat environmental levy (editable on the page)
 
+// ---- Membership billing ----
+const PLAN_PRICES = {
+  plus: Number(process.env.PRICE_PLUS || "19.99"),
+  business: Number(process.env.PRICE_BUSINESS || "49.99"),
+  family: Number(process.env.PRICE_FAMILY || "29.99")
+};
+const PLAN_DAYS = Number(process.env.PLAN_DAYS || "30");
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
+const PAYPAL_SECRET = process.env.PAYPAL_SECRET || "";
+const PAYPAL_BASE = process.env.PAYPAL_ENV === "live"
+  ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+
+async function paypalToken() {
+  const r = await fetch(PAYPAL_BASE + "/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + Buffer.from(PAYPAL_CLIENT_ID + ":" + PAYPAL_SECRET).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "grant_type=client_credentials"
+  });
+  if (!r.ok) throw new Error("PayPal auth failed");
+  return (await r.json()).access_token;
+}
+async function paypalGetOrder(orderID, token) {
+  const r = await fetch(PAYPAL_BASE + "/v2/checkout/orders/" + encodeURIComponent(orderID), {
+    headers: { Authorization: "Bearer " + token }
+  });
+  if (!r.ok) throw new Error("PayPal order lookup failed");
+  return r.json();
+}
+async function activatePlan(userId, plan) {
+  await pool.query(
+    `UPDATE users SET plan = $1, plan_expires = now() + ($2 || ' days')::interval WHERE id = $3`,
+    [plan, String(PLAN_DAYS), userId]
+  );
+}
+
 const app = express();
 app.use(express.json({ limit: "15mb" })); // allow base64 invoice images
 app.use(cors({
@@ -49,7 +87,7 @@ app.use(cors({
 
 // ---- Helpers ----
 function sign(payload) { return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" }); }
-function publicUser(u) { return { id: u.id, name: u.name, email: u.email, plan: u.plan }; }
+function publicUser(u) { return { id: u.id, name: u.name, email: u.email, plan: u.plan, planExpires: u.plan_expires || null }; }
 function auth(role) {
   return (req, res, next) => {
     const header = req.headers.authorization || "";
@@ -215,6 +253,54 @@ app.post("/api/quote", wrap(async (req, res) => {
   });
 }));
 
+// ================= MEMBERSHIP BILLING =================
+// PayPal: verify the captured order server-side, then activate the plan.
+app.post("/api/billing/paypal", auth("customer"), wrap(async (req, res) => {
+  const { plan, orderID } = req.body || {};
+  if (!PLAN_PRICES[plan]) return res.status(400).json({ message: "Unknown plan." });
+  if (!orderID) return res.status(400).json({ message: "Missing PayPal order." });
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+    return res.status(503).json({ code: "PAYPAL_NOT_CONFIGURED", message: "PayPal is not enabled on the server yet." });
+  }
+  // Prevent replaying the same order
+  const dup = await pool.query("SELECT id FROM payments WHERE reference = $1", [orderID]);
+  if (dup.rows.length) {
+    const u = (await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id])).rows[0];
+    return res.json({ ok: true, alreadyProcessed: true, user: publicUser(u) });
+  }
+  const token = await paypalToken();
+  const order = await paypalGetOrder(orderID, token);
+  const pu = (order.purchase_units && order.purchase_units[0]) || {};
+  const amt = pu.amount || (pu.payments && pu.payments.captures && pu.payments.captures[0] && pu.payments.captures[0].amount) || {};
+  const paidValue = Number(amt.value || 0);
+  const expected = PLAN_PRICES[plan];
+  if (order.status !== "COMPLETED" && order.status !== "APPROVED") {
+    return res.status(400).json({ message: "Payment not completed." });
+  }
+  if (paidValue + 0.01 < expected) {
+    return res.status(400).json({ message: "Paid amount does not match the plan price." });
+  }
+  await pool.query(
+    "INSERT INTO payments (user_id, email, customer, plan, method, amount, reference, status) VALUES ($1,$2,$3,$4,'paypal',$5,$6,'paid')",
+    [req.user.id, req.user.email, order.payer && order.payer.name ? (order.payer.name.given_name + " " + (order.payer.name.surname || "")).trim() : null, plan, paidValue, orderID]
+  );
+  await activatePlan(req.user.id, plan);
+  const user = (await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id])).rows[0];
+  res.json({ ok: true, user: publicUser(user) });
+}));
+
+// SunCash: manual - record a pending payment for admin to confirm.
+app.post("/api/billing/suncash", auth("customer"), wrap(async (req, res) => {
+  const { plan, reference } = req.body || {};
+  if (!PLAN_PRICES[plan]) return res.status(400).json({ message: "Unknown plan." });
+  const user = (await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id])).rows[0];
+  await pool.query(
+    "INSERT INTO payments (user_id, email, customer, plan, method, amount, reference, status) VALUES ($1,$2,$3,$4,'suncash',$5,$6,'pending')",
+    [req.user.id, req.user.email, user ? user.name : null, plan, PLAN_PRICES[plan], String(reference || "").trim() || null]
+  );
+  res.status(201).json({ pending: true, message: "Payment submitted. We'll activate your plan once we confirm your SunCash payment." });
+}));
+
 // ================= ADMIN =================
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body || {};
@@ -282,7 +368,25 @@ app.delete("/api/admin/invoices/:id", auth("admin"), wrap(async (req, res) => {
 }));
 
 app.get("/api/admin/customers", auth("admin"), wrap(async (_req, res) => {
-  res.json((await pool.query("SELECT id, name, email, plan, created_at FROM users ORDER BY created_at DESC")).rows);
+  res.json((await pool.query("SELECT id, name, email, plan, plan_expires, created_at FROM users ORDER BY created_at DESC")).rows);
+}));
+
+app.get("/api/admin/payments", auth("admin"), wrap(async (_req, res) => {
+  res.json((await pool.query("SELECT * FROM payments ORDER BY created_at DESC")).rows);
+}));
+app.post("/api/admin/payments/:id/approve", auth("admin"), wrap(async (req, res) => {
+  const p = (await pool.query("SELECT * FROM payments WHERE id = $1", [req.params.id])).rows[0];
+  if (!p) return res.status(404).json({ message: "Payment not found." });
+  if (p.status !== "paid") {
+    await pool.query("UPDATE payments SET status = 'paid' WHERE id = $1", [p.id]);
+    if (p.user_id) await activatePlan(p.user_id, p.plan);
+  }
+  res.json({ ok: true });
+}));
+app.post("/api/admin/payments/:id/reject", auth("admin"), wrap(async (req, res) => {
+  const r = await pool.query("UPDATE payments SET status = 'rejected' WHERE id = $1", [req.params.id]);
+  if (!r.rowCount) return res.status(404).json({ message: "Payment not found." });
+  res.json({ ok: true });
 }));
 
 // ---- Start (after DB is ready) ----

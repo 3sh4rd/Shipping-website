@@ -63,7 +63,21 @@ async function init() {
       status   TEXT NOT NULL DEFAULT 'Unpaid',
       amount   NUMERIC NOT NULL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS payments (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      email      TEXT,
+      customer   TEXT,
+      plan       TEXT NOT NULL,
+      method     TEXT NOT NULL,
+      amount     NUMERIC NOT NULL DEFAULT 0,
+      reference  TEXT,
+      status     TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
   `);
+  // Membership expiry (added after initial launch)
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires TIMESTAMPTZ");
   await seed();
 }
 

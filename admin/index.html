@@ -71,6 +71,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" data-tab="orders">Orders</button>
         <button class="admin-tab" data-tab="invoices">Invoices</button>
+        <button class="admin-tab" data-tab="payments">Payments</button>
         <input type="search" id="adminSearch" class="admin-search" placeholder="Search…" />
       </div>
 
@@ -82,6 +83,18 @@
               <tr><th>Order #</th><th>Customer</th><th>Service</th><th>Date</th><th>Status</th><th class="ta-right">Total</th><th></th></tr>
             </thead>
             <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payments table -->
+      <div class="admin-panel" id="paymentsPanel" hidden>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Date</th><th>Customer</th><th>Plan</th><th>Method</th><th class="ta-right">Amount</th><th>Reference</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
           </table>
         </div>
       </div>
@@ -228,7 +241,30 @@
     });
 
     // ---- Data loading ----
-    let ordersData = [], invoicesData = [];
+    let ordersData = [], invoicesData = [], paymentsData = [];
+
+    function renderPayments(list) {
+      const q = $('#adminSearch').value.trim().toLowerCase();
+      const rows = list.filter(p => !q || JSON.stringify(p).toLowerCase().includes(q));
+      $('#paymentsBody').innerHTML = rows.length ? rows.map(p => {
+        const when = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
+        const st = String(p.status || '').toLowerCase();
+        const cls = st === 'paid' ? 'good' : st === 'rejected' ? 'bad' : 'warn';
+        const actions = st === 'pending'
+          ? `<button class="row-approve" data-id="${esc(p.id)}" title="Approve &amp; activate">✓</button><button class="row-del" data-pay="${esc(p.id)}" title="Reject">✕</button>`
+          : '';
+        return `<tr>
+          <td>${esc(when)}</td>
+          <td>${esc(p.customer || '')}<br><small class="muted">${esc(p.email || '')}</small></td>
+          <td>${esc(p.plan)}</td>
+          <td>${esc(p.method)}</td>
+          <td class="ta-right">${money(p.amount)}</td>
+          <td class="mono">${esc(p.reference || '-')}</td>
+          <td><span class="status-badge ${cls}">${esc(p.status)}</span></td>
+          <td class="ta-right row-actions">${actions}</td>
+        </tr>`;
+      }).join('') : emptyRow(8, q ? 'No matching payments.' : 'No payments yet.');
+    }
 
     function notConfiguredRow(cols, endpoint) {
       return `<tr><td colspan="${cols}" class="admin-empty">
@@ -300,6 +336,17 @@
           ? notConfiguredRow(7, CFG.endpoints.adminInvoices)
           : emptyRow(7, 'Could not load invoices: ' + (err.message || 'error'));
       }
+      // Payments
+      try {
+        const data = await GofaAPI.adminPayments();
+        paymentsData = Array.isArray(data) ? data : [];
+        renderPayments(paymentsData);
+      } catch (err) {
+        paymentsData = [];
+        $('#paymentsBody').innerHTML = err.code === 'BACKEND_NOT_CONFIGURED'
+          ? notConfiguredRow(8, '/api/admin/payments')
+          : emptyRow(8, 'Could not load payments: ' + (err.message || 'error'));
+      }
       renderSummary();
     }
 
@@ -310,8 +357,24 @@
       const tab = t.dataset.tab;
       $('#ordersPanel').hidden = tab !== 'orders';
       $('#invoicesPanel').hidden = tab !== 'invoices';
+      $('#paymentsPanel').hidden = tab !== 'payments';
     }));
-    $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); });
+    $('#adminSearch').addEventListener('input', () => { renderOrders(ordersData); renderInvoices(invoicesData); renderPayments(paymentsData); });
+
+    // Approve / reject SunCash (and other) payments
+    document.addEventListener('click', async (e) => {
+      const ap = e.target.closest('.row-approve');
+      const rj = e.target.closest('.row-del[data-pay]');
+      if (ap) {
+        if (!confirm('Approve this payment and activate the plan?')) return;
+        try { await GofaAPI.adminApprovePayment(ap.dataset.id); await loadData(); }
+        catch (err) { alert('Could not approve: ' + (err.message || 'error')); }
+      } else if (rj) {
+        if (!confirm('Reject this payment?')) return;
+        try { await GofaAPI.adminRejectPayment(rj.dataset.pay); await loadData(); }
+        catch (err) { alert('Could not reject: ' + (err.message || 'error')); }
+      }
+    });
     $('#refreshBtn').addEventListener('click', loadData);
 
     function currentTab() { return document.querySelector('.admin-tab.active').dataset.tab; }
